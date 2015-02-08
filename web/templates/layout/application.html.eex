@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Distributed Snake, based on Erlang/Elixir.">
+    <meta name="author" content="Luc Tielen & Benny Loodts">
+    <title>Distributed Snake</title>
+    <script type="text/javascript" src="/js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="/js/phoenix.js"></script>
+    <script type="text/javascript" src="/js/snake.js"></script>
+    <link rel="stylesheet" href="/css/phoenix.css">
+  </head>
+  <body>
+    <div class="container-fluid">
+      <%= @inner %>
+    </div> <!-- /container -->
+  </body>
+</html>

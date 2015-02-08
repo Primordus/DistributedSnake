@@ -5,6 +5,9 @@ defmodule Snake.Mixfile do
     [app: :snake,
      version: "0.0.1",
      language: :erlang,
+     elixir: "~> 1.0",
+     elixirc_paths: ["lib", "web"],
+     compilers: [:phoenix] ++ Mix.compilers,
      deps: deps]
   end
 
@@ -12,8 +15,8 @@ defmodule Snake.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [],
-     mod: {:snake_app, []}]
+    [mod: {Snake, []},
+      applications: [:phoenix, :cowboy, :logger]]
   end
 
   # Dependencies can be Hex packages:
@@ -26,6 +29,7 @@ defmodule Snake.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    []
+     [{:phoenix, "~> 0.8.0"},
+     {:cowboy, "~> 1.0"}]
   end
 end

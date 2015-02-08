@@ -1,0 +1,10 @@
+<div class='row-fluid'>
+    <div class='col-md-10 col-md-offset-1'>
+        <h3>Snake</h3>
+        <canvas id='canvas' height='1' width='1'>
+            <!-- Height and width are set in CSS. -->
+        </canvas>
+
+        <p class='lead'>Testing... <span id='score'>0</span></p>
+    </div>
+</div>
