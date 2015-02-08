@@ -4,7 +4,6 @@ defmodule Snake.Mixfile do
   def project do
     [app: :snake,
      version: "0.0.1",
-     language: :erlang,
      elixir: "~> 1.0",
      elixirc_paths: ["lib", "web"],
      compilers: [:phoenix] ++ Mix.compilers,
