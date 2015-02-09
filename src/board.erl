@@ -91,7 +91,7 @@ handle_call({remove, down}, _From, State = #state{}) ->
 
 handle_call(stop, _From, State = #state{}) ->
     Reply = ok,
-    {reply, normal, Reply, State}.
+    {stop, normal, Reply, State}.
 
 handle_cast(_Request, State) ->
     {noreply, State}.
@@ -107,5 +107,4 @@ terminate(_Reason, _State = #state{left = Left, right = Right,
     remove(up_of, Down),
     ok.
 
-code_change(_OldVersion, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVersion, State, _Extra) -> {ok, State}.
