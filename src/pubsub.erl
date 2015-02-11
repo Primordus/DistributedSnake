@@ -22,7 +22,7 @@ start() ->
     {ok, Manager}.
 
 %% Publishes a message to all subscribers.
-publish(EventManager, Message) ->
+publish(EventManager, Message) when is_pid(EventManager) ->
     gen_event:sync_notify(EventManager, {publish, Message}).
 
 %% Adds a function that can process an incoming message as a subscriber to the 
@@ -61,7 +61,7 @@ remove_sub(EventManager) when is_pid(EventManager)  ->
     gen_event:sync_notify(EventManager, {remove_sub, self()}).
 
 %% Stops the event manager.
-stop(EventManager) -> gen_event:stop(EventManager).
+stop(EventManager) when is_pid(EventManager) -> gen_event:stop(EventManager).
 
 %% gen_event callbacks:
 
