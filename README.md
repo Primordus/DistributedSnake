@@ -5,7 +5,7 @@ Snake on multiple computers. Based on Erlang and Elixir.
 # Starting snake
 
 1. Install dependencies with `mix deps.get && mix deps.compile`
-2. Start Phoenix endpoint with `mix phoenix.server`
+2. Start snake with the following command: `./start.sh NAME_OF_THIS_NODE`
 3. Go to `localhost:4000` from your browser.
 
 # TODO list

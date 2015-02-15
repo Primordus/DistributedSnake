@@ -2,7 +2,7 @@
 -behavior(gen_event).
 
 %% public API:
--export([start/0, stop/1, publish/2, 
+-export([start_link/0, stop/1, publish/2, 
         add_sub/2, add_sub/1, 
         remove_sub/1]).
 
@@ -15,8 +15,8 @@
 %% API
 
 %% Starts the event manager (not included in a supervision tree).
-start() -> 
-    {ok, Manager} = gen_event:start(),
+start_link() -> 
+    {ok, Manager} = gen_event:start_link(),
     Args = ok,
     gen_event:add_handler(Manager, ?MODULE, Args),
     {ok, Manager}.

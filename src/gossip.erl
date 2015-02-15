@@ -1,7 +1,7 @@
 -module(gossip).
 -behavior(gen_server).
 
-%% TODO check for errors/correctness later!!
+%% TODO make mechanism for detecting node removal better (maybe polling?)
 
 %% API
 
@@ -14,6 +14,7 @@
          terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
+-define(FIRST_NODE, 'luc@localhost').
 
 -record(state, {pubsub = no_pid}).
 
@@ -35,14 +36,14 @@ subscribe(SubFunction) when is_function(SubFunction, 1) ->
 init(_Args = ok) ->
     process_flag(trap_exit, true),
 
-    Result = net_adm:ping('pi1@tielen.local'), %% TODO check if correct
+    Result = net_adm:ping(?FIRST_NODE),
     ok = process_ping(Result), % crashes if ping fails.
     
-    BeginState = #state{pubsub = pubsub:start_link()},
-    {ok, BeginState}.
+    {ok, PubSub} = pubsub:start_link(),
+    {ok, #state{pubsub = PubSub}}.
 
 handle_call({subscribe, SubFunction}, _From, State = #state{pubsub = EvtMgr}) ->
-    pubsub:subscribe(EvtMgr, SubFunction),
+    pubsub:add_sub(EvtMgr, SubFunction),
     Reply = ok,
     {reply, Reply, State};
 handle_call(_Request, _From, State) ->
@@ -68,14 +69,19 @@ code_change(_OldVersion, State, _Extra) -> {ok, State}.
 
 %% Process the result of the ping to another node.
 process_ping(pong) ->
-    notify_node_added(),
+    Node = node(),
+    % spawns process on the first node (knows all other nodes already), 
+    % notifies everybody except this node of the change in the cluster.
+    % TODO improve this code later..
+    spawn(?FIRST_NODE, fun() -> notify_node_added(Node) end),
     ok;
 process_ping(pang) ->
     not_ok.
 
-%% Sends an async message to all other nodes that a new node is added.
-notify_node_added() ->
-    gen_server:abcast(nodes(), ?SERVER, {added_node, node()}).
+%% Sends an async message to all nodes (except NewNode) that a new node is added.
+notify_node_added(NewNode) ->
+    Nodes = lists:delete(NewNode, [node() | nodes()]),
+    gen_server:abcast(Nodes, ?SERVER, {added_node, NewNode}).
 
 %% Sends an async message to all other nodes that a node is removed.
 notify_node_removed() ->
