@@ -11,6 +11,7 @@
 
 -define(SERVER, ?MODULE).
 
+
 %% API
 
 %% Starts a LED process.
@@ -27,6 +28,7 @@ on(LED) when is_pid(LED) -> ok = gen_server:call(LED, on).
 
 %% Turns the LED off.
 off(LED) when is_pid(LED) -> ok = gen_server:call(LED, off).
+
 
 
 %% Callback functions
