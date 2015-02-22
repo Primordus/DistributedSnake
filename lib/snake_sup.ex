@@ -7,4 +7,8 @@ defmodule Snake.SnakeSupervisor do
     tree = [worker(:snake, [])]
     supervise(tree, strategy: :simple_one_for_one)
   end
+
+  def start_child(NewNode, State) do
+    Supervisor.start_child({__MODULE__, NewNode}, [State])
+  end
 end

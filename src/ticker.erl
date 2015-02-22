@@ -3,7 +3,7 @@
 
 %% ticker API
 
--export([start_link/0, start_link/1, subscribe/1]).
+-export([start_link/0, start_link/1, subscribe/1, unsubscribe/0]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -29,6 +29,9 @@ start_link(Delay) when Delay > 0 ->
 subscribe(SubFunction) when is_function(SubFunction, 1) ->
     gen_server:cast(?SERVER, {subscribe, SubFunction}).
 
+%% Unsubscribes a process from the ticker process.
+unsubscribe() -> gen_server:cast(?SERVER, {unsubscribe, self()}).
+
 %% gen_server callback functions
 
 init({delay, Delay}) ->
@@ -45,6 +48,9 @@ handle_call(_Request, _From, State = #state{}) ->
 
 handle_cast({subscribe, SubFunction}, State = #state{pubsub = PubSub}) ->
     pubsub:add_sub(PubSub, SubFunction),
+    {noreply, State};
+handle_cast({unsubscribe, Pid}, State = #state{pubsub = PubSub}) ->
+    pubsub:remove_sub(PubSub, Pid),
     {noreply, State};
 handle_cast(time_expired, State = #state{delay = Delay, pubsub = PubSub}) ->
     pubsub:publish(PubSub, tick),
