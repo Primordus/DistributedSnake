@@ -5,7 +5,7 @@
 
 %% API
 
--export([start_link/0, subscribe/1]).
+-export([start_link/0, subscribe/1, unsubscribe/0]).
 
 %% gen server callbacks
 
@@ -31,6 +31,9 @@ start_link() ->
 subscribe(SubFunction) when is_function(SubFunction, 1) ->
     ok = gen_server:call(?SERVER, {subscribe, SubFunction}).
 
+%% Unsubscribes a certain process from this gossip server process.
+unsubscribe() -> gen_server:cast(?SERVER, {unsubscribe, self()}).
+
 %% Gen server callbacks
 
 init(_Args = ok) ->
@@ -50,6 +53,9 @@ handle_call(_Request, _From, State) ->
     Reply = {error, not_supported},
     {reply, Reply, State}.
 
+handle_cast({unsubscribe, Pid}, State = #state{pubsub = EvtMgr}) ->
+    pubsub:remove_sub(EvtMgr, Pid),
+    {noreply, State};
 handle_cast(Event = {added_node, _Node}, State = #state{pubsub = EvtMgr}) -> 
     pubsub:publish(EvtMgr, Event),
     {noreply, State};
