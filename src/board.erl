@@ -30,13 +30,17 @@ stop(Board) -> gen_server:call(Board, stop).
 %% Gives back a list of all boards ([{Board, node()}].
 get_all() -> [{?SERVER, Node} || Node <- [node() | nodes()]].
 
-% Gives back the pid of an adjacent board (or no_board).
+%% Gives back the pid of an adjacent board (or no_board).
 get(left) ->  gen_server:call(?SERVER, {get, left});
 get(right) -> gen_server:call(?SERVER, {get, right});
 get(up) ->    gen_server:call(?SERVER, {get, up});
 get(down) ->  gen_Server:call(?SERVER, {get, down}).
 
 %% BoardX = {?SERVER, node()}.
+add(no_board, _, _Board) -> 
+    ok;
+add(_Board, _, no_board) ->
+    ok;
 add(Board1, left_of, Board2) ->
     ok = gen_server:call(Board2, {add, Board1, left}),
     ok = gen_server:call(Board1, {add, Board2, right});
@@ -105,6 +109,8 @@ terminate(_Reason, _State = #state{left = Left, right = Right,
     remove(right_of, Left),
     remove(down_of, Up),
     remove(up_of, Down),
+
+    ok = board_mgr:notify_board_gone(node()),
     ok.
 
 code_change(_OldVersion, State, _Extra) -> {ok, State}.

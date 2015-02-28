@@ -4,7 +4,7 @@
 %% public API:
 -export([start_link/0, stop/1, publish/2, 
         add_sub/2, add_sub/1, 
-        remove_sub/1]).
+        remove_sub/2]).
 
 %% gen_event callbacks:
 -export([init/1, handle_event/2, handle_call/2, handle_info/2, 
@@ -41,7 +41,7 @@ publish(EventManager, Message) when is_pid(EventManager) ->
 %% 
 %% handle_call({new_msg, Msg}, From, State) -> ...
 %%
-add_sub(EventManager, SubscribeFunction) 
+add_sub(EventManager, SubscribeFunction)  %% TODO pass Pid here too, makes it more flexible instead of using self()?
         when is_pid(EventManager) 
         andalso is_function(SubscribeFunction, 1) ->
     gen_event:sync_notify(EventManager, {add_sub, self(), SubscribeFunction}).
@@ -55,10 +55,9 @@ add_sub(EventManager) ->
     end,
     add_sub(EventManager, F).
 
-%% Removes the calling process from the pubsub mechanism, should be the same
-%% process as the one that subscribed to the pubsub process.
-remove_sub(EventManager) when is_pid(EventManager)  -> 
-    gen_event:sync_notify(EventManager, {remove_sub, self()}).
+%% Removes a process from the pubsub mechanism.
+remove_sub(EventManager, Pid) when is_pid(EventManager) andalso is_pid(Pid) -> 
+    gen_event:sync_notify(EventManager, {remove_sub, Pid}).
 
 %% Stops the event manager.
 stop(EventManager) when is_pid(EventManager) -> gen_event:stop(EventManager).

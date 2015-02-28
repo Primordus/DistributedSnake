@@ -5,7 +5,7 @@ defmodule Snake.GameSupervisor do
 
   def init(:ok) do
     tree = [supervisor(Snake.SnakeSupervisor, [:ok]),
-            worker(:insect, []),
+            supervisor(Snake.InsectSupervisor, [:ok]),
             worker(:board, []),
             worker(:game_tick, [])]
     supervise(tree, :one_for_all)
