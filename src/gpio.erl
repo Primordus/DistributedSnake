@@ -44,15 +44,15 @@
 %% test from command-prompt:
 %% > cd DistributedSnake/src
 %% > sudo erl
-%% > c(input.erl).
+%% > c(gpio.erl).
 %% > gpio:pin_mode(18, input).
 %% > gpio:digital_read(18).
 
 
 
 
-%% WRITING INPUT
-%% _____________
+%% WRITING OUTPUT
+%% ______________
 %%
 %%typical test/usage, testing
 %%
@@ -84,7 +84,7 @@
 %% test from command-prompt:
 %% > cd DistributedSnake/src
 %% > sudo erl
-%% > c(led.erl).
+%% > c(gpio.erl).
 %% > gpio:pin_mode(18, output).
 %% > gpio:digital_write(18, high).
 %% > gpio:digital_write(18, low).
@@ -96,7 +96,9 @@
 pin_mode(Pin, output) when Pin > 0 ->
     pin_export(Pin),
     File = pin_direction_path(Pin),
-    write_to_file(File, "out");
+    write_to_file(File, "out"),
+    %%io:format("gpio pin_mode output ~w ~n",[Pin]),   
+    digital_write(Pin, low);    %% Avoid side-effects: output goes high on startup
 pin_mode(Pin, input) when Pin > 0 ->
     pin_export(Pin),
     File = pin_direction_path(Pin),
@@ -162,6 +164,6 @@ write_to_file(FilePath, Contents) when is_list(FilePath)
 read_from_file(FilePath, Length) when is_list(FilePath) andalso Length > 0 ->
     Options = [read, binary],
     {ok, File} = file:open(FilePath, Options),
-    Contents = file:read(File, Length),
+    {ok, Contents} = file:read(File, Length),
     file:close(File),
     Contents.

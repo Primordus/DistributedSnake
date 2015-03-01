@@ -2,7 +2,18 @@
 
 
 %% API:
--export([start_link/1, read/2]).
+-export([start_link/1, read/1]).
+
+
+%% test from command-prompt:
+%% > cd DistributedSnake/src
+%% > sudo erl
+%% > c(input.erl).
+%% > {ok, InputSvr} = input:start_link(18).
+%% > InputState = input:read(InputSvr).
+%%   > low
+%% > input:stop(InputSvr).  %%does not work yet...
+
 
 %% Callback functions
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -22,8 +33,8 @@ start_link(Pin) when Pin > 0 ->
     gen_server:start_link(?SERVER, Args, Options).
 
 %% Read the input pin.
-read(Server, Pin) when is_pid(Server) -> gen_server:call(Server, {read, Pin}).
-
+read(InputSvr) when is_pid(InputSvr) -> 
+    gen_server:call(InputSvr, read).
 
 
 %% Callback functions
@@ -33,9 +44,10 @@ init(Pin) ->
     gpio:pin_mode(Pin, input),
     {ok, #state{pin = Pin}}.
 
-handle_call({read, Pin}, _From, _) ->
+handle_call(read, _From, State = #state{pin = Pin}) ->
     Reply = gpio:digital_read(Pin),
-    {reply, normal, Reply};
+    {reply, Reply, State};
+
 
 handle_call(stop, _From, State = #state{}) ->
     {stop, normal, State}.
