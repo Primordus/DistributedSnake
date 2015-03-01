@@ -116,8 +116,8 @@ defmodule Snake.BoardManager do
   Starts a board manager process.
   """
   def start_link do
-    Args = :ok
-    GenServer.start_link(__MODULE__, Args, [name: @server])
+    args = :ok
+    GenServer.start_link(__MODULE__, args, [name: {:global, @server}])
   end
 
   @doc """
