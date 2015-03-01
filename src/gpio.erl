@@ -2,10 +2,93 @@
 -export([pin_mode/2, pin_release/1, 
          digital_write/2, digital_read/1]).
 
-%% TODO check for errors later..
-
 %% Module that exposes an Arduino-like API for controlling the GPIO pins
 %% of the Raspberry Pi.
+
+
+
+%% READING INPUT
+%% _____________
+%%
+%%typical test/usage, testing
+%%
+%% RespBerryPi 2: Pin-numbering
+%% ______________________
+%% |                1  2 |
+%% |                3  4 |
+%% |                5  5 |
+%% |                7  8 |
+%% |               .. .. |
+%% |                     |
+%% |               41 42 |
+%% |                     |
+%% |                     |
+%% |                     |
+%% |                     |
+%% |  ___    ___   ___   |
+%% | |eth|  |USB| |USB|  |
+%% ______________________
+%%
+%%
+%%  Pin 1  = 3.3V
+%%  Pin 6  = Ground
+%%  Pin 12 = I/O 18
+%%
+%%
+%% electic scheme:
+%% Pin 1 ___ R ____/ __ Pin 6
+%%               |
+%%             Pin 12
+%%
+%%
+%% test from command-prompt:
+%% > cd DistributedSnake/src
+%% > sudo erl
+%% > c(gpio.erl).
+%% > gpio:pin_mode(18, input).
+%% > gpio:digital_read(18).
+
+
+
+
+%% WRITING OUTPUT
+%% ______________
+%%
+%%typical test/usage, testing
+%%
+%% RespBerryPi 2: Pin-numbering
+%% ______________________
+%% |                1  2 |
+%% |                3  4 |
+%% |                5  5 |
+%% |                7  8 |
+%% |               .. .. |
+%% |                     |
+%% |               41 42 |
+%% |                     |
+%% |                     |
+%% |                     |
+%% |                     |
+%% |  ___    ___   ___   |
+%% | |eth|  |USB| |USB|  |
+%% ______________________
+%%
+%%  Pin 6  = Ground
+%%  Pin 12 = I/O 18
+%%
+%%
+%% electic scheme:
+%% Pin 12 ___ R __ LED __ Pin 6
+%%
+%%
+%% test from command-prompt:
+%% > cd DistributedSnake/src
+%% > sudo erl
+%% > c(gpio.erl).
+%% > gpio:pin_mode(18, output).
+%% > gpio:digital_write(18, high).
+%% > gpio:digital_write(18, low).
+
 
 %% API:
 
@@ -13,7 +96,9 @@
 pin_mode(Pin, output) when Pin > 0 ->
     pin_export(Pin),
     File = pin_direction_path(Pin),
-    write_to_file(File, "out");
+    write_to_file(File, "out"),
+    %%io:format("gpio pin_mode output ~w ~n",[Pin]),   
+    digital_write(Pin, low);    %% Avoid side-effects: output goes high on startup
 pin_mode(Pin, input) when Pin > 0 ->
     pin_export(Pin),
     File = pin_direction_path(Pin),
@@ -39,8 +124,9 @@ digital_read(Pin) when Pin > 0 ->
     Contents = read_from_file(File, 1),
     digital_read(contents, Contents).
 
-digital_read(contents, "0") -> low;
-digital_read(contents, "1") -> high.
+
+digital_read(contents, {ok, <<48>>}) -> low;
+digital_read(contents, {ok, <<49>>}) -> high.
 
 %% Helper functions:
 
@@ -78,6 +164,6 @@ write_to_file(FilePath, Contents) when is_list(FilePath)
 read_from_file(FilePath, Length) when is_list(FilePath) andalso Length > 0 ->
     Options = [read, binary],
     {ok, File} = file:open(FilePath, Options),
-    Contents = file:read(File, Length),
+    {ok, Contents} = file:read(File, Length),
     file:close(File),
     Contents.
