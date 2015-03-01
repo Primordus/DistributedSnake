@@ -92,7 +92,7 @@ defmodule Snake.BoardManager do
     """
     def add_gap(state = %State{}, :no_position), do: state
     def add_gap(state = %State{gaps: gaps}, position = {_x, _y}) do
-      %State{gaps: gaps |> append_to_list(position)}
+      %State{state | gaps: gaps |> append_to_list(position)}
     end
 
     defp change_direction(:right), do: :down
@@ -134,7 +134,7 @@ defmodule Snake.BoardManager do
     Process.flag(:trap_exit, true)
     BoardDB.init
     Gossip.subscribe fn
-      (msg = {:added_node, node}) ->
+      (msg = {:added_node, _node}) ->
         :ok = GenServer.call(@server, msg)
       ({:removed_node, node}) ->
         :ok = notify_board_gone(node)
@@ -158,7 +158,7 @@ defmodule Snake.BoardManager do
   end
   
   @doc false
-  def terminate(_reason, state = %State{}) do
+  def terminate(_reason, _state) do
     Gossip.unsubscribe
     BoardDB.destroy
     :ok
@@ -189,13 +189,13 @@ defmodule Snake.BoardManager do
     node 
     |> to_board 
     |> BoardDB.get_key
-    |> do_remove(node)
+    |> do_remove
   end
 
-  defp do_remove(:no_position, node) do
+  defp do_remove(:no_position) do
     {:removed, :no_position}
   end
-  defp do_remove(position = {x, y}, node) do
+  defp do_remove(position = {x, y}) do
     BoardDB.remove(position)
 
     up = BoardDB.get {x, y + 1} 

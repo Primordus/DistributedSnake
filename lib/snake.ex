@@ -117,7 +117,7 @@ defmodule Snake.Snake do
     # Only called in tail segments.
     # Previous part is on same node as this one, no special action needed.
     {:tail, segment} = next |> GenServer.call {:move, old_position, node}
-    new_state = %State{next_segment: segment, position: new_position}
+    new_state = %State{state | next_segment: segment, position: new_position}
     reply = {:tail, self}
     {:reply, reply, new_state}
   end
@@ -129,7 +129,7 @@ defmodule Snake.Snake do
     # 1) Notify next segment of movement
     {:tail, segment} = next |> GenServer.call {:move, old_position, Node.self}
     # 2) Update state
-    new_state = %State{position: new_position, next_segment: segment}
+    new_state = %State{state | position: new_position, next_segment: segment}
     # 3) Start the process on the new node with this new state.
     {:ok, new_segment} = SnakeSupervisor.start_child(new_node, new_state)
     # 4) Update previous segment that this segment is now on another node.
@@ -222,10 +222,10 @@ defmodule Snake.Snake do
     do_move(direction, new_state)
   end
 
-  defp do_move(:left, state = %State{position: {x, y}}) when X > 0 do
+  defp do_move(:left, state = %State{position: {x, y}}) when x > 0 do
     {:noreply, %State{state | position: {x - 1, y}}}
   end
-  defp do_move(:left, state = %State{position: {x, y}}) do
+  defp do_move(:left, state = %State{position: {_x, y}}) do
     {Board, new_node} = Board.get(:left)
     new_state = %State{state | position: {@width, y}}
     new_head = spawn_head(new_node, new_state)
@@ -234,7 +234,7 @@ defmodule Snake.Snake do
   defp do_move(:right, state = %State{position: {x, y}}) when x < @width do
     {:noreply, %State{state | position: {x + 1, y}}}
   end
-  defp do_move(:right, state = %State{position: {x, y}}) do
+  defp do_move(:right, state = %State{position: {_x, y}}) do
     {Board, new_node} = Board.get(:right)
     new_state = %State{state | position: {0, y}}
     new_head = spawn_head(new_node, new_state)
@@ -243,7 +243,7 @@ defmodule Snake.Snake do
   defp do_move(:up, state = %State{position: {x, y}}) when y < @height do
     {:noreply, %State{state | position: {x, y + 1}}}
   end
-  defp do_move(:up, state = %State{position: {x, y}}) do
+  defp do_move(:up, state = %State{position: {x, _y}}) do
     {Board, new_node} = Board.get(:up)
     new_state = %State{state | position: {x, 0}}
     new_head = spawn_head(new_node, new_state)
@@ -252,7 +252,7 @@ defmodule Snake.Snake do
   defp do_move(:down, state = %State{position: {x, y}}) when y > 0 do
     {:noreply, %State{state | position: {x, y - 1}}}
   end
-  defp do_move(:down, state = %State{position: {x, y}}) do
+  defp do_move(:down, state = %State{position: {x, _y}}) do
     {Board, new_node} = Board.get(:down)
     new_state = %State{state | position: {x, @height}}
     new_head = spawn_head(new_node, new_state)

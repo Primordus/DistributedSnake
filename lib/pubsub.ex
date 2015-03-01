@@ -1,4 +1,4 @@
-defmodule Snake.Pubsub do
+defmodule Snake.PubSub do
   use GenEvent
 
   @moduledoc """
@@ -52,7 +52,7 @@ defmodule Snake.Pubsub do
   Incoming messages are delivered as is (using send operator).
   """
   def add_sub(manager, pid) do
-    manager |> add_sub fn(msg) ->
+    manager |> add_sub pid, fn(msg) ->
       pid |> send msg
     end
   end
@@ -86,5 +86,8 @@ defmodule Snake.Pubsub do
   end
   def handle_event({:remove_sub, pid_key}, subscribers = %HashDict{}) do
     {:ok, subscribers |> HashDict.delete pid_key}
+  end
+  def handle_event(_unexpected_event, subscribers = %HashDict{}) do
+    {:ok, subscribers}
   end
 end

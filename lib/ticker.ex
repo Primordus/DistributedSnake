@@ -6,10 +6,10 @@ defmodule Snake.Ticker do
   Process that emits a tick to a pubsub mechanism every X milliseconds.
   """
 
-  @server __MODULE__
+  @server {:global, __MODULE__}
   @default_delay 1000 # 1 second.
 
-  defmodule State, do: defstruct delay: @default_delay, pubsub: :no_pid
+  defmodule State, do: defstruct delay: 0, pubsub: :no_pid
 
   # API
   
@@ -23,20 +23,22 @@ defmodule Snake.Ticker do
   """
   def start_link(delay) when delay > 0 do
     args = {:delay, delay}
-    GenServer.start_link(__MODULE__, args, [name: {:global, @server}]) # TODO check what this gives when started on 2nd node => process result
+    GenServer.start_link(__MODULE__, args, [name: @server]) # TODO check what this gives when started on 2nd node => process result
   end
 
   @doc """
   Subscribes a process to the ticker process to start receiving ticks.
   """
-  def subscribe(sub_function) when is_function(sub_function, 1) do
-    @server |> GenServer.cast {:subscribe, sub_function}
+  def subscribe(pid, sub_function) when is_function(sub_function, 1) do
+    @server |> GenServer.cast {:subscribe, pid, sub_function}
   end
 
   @doc """
   Unsubscribes a process from the ticker process.
   """
-  def unsubscribe, do: @server |> GenServer.cast {:unsubscribe, self}
+  def unsubscribe(pid) when is_pid(pid) do
+    @server |> GenServer.cast {:unsubscribe, pid}
+  end
 
   # GenServer callbacks
 
@@ -50,8 +52,9 @@ defmodule Snake.Ticker do
   end
 
   @doc false
-  def handle_cast({:subscribe, sub_func}, state = %State{pubsub: pubsub}) do
-    pubsub |> PubSub.add_sub(sub_func)
+  def handle_cast({:subscribe, pid, sub_func}, 
+                  state = %State{pubsub: pubsub}) do
+    pubsub |> PubSub.add_sub(pid, sub_func)
     {:noreply, state}
   end
   def handle_cast({:unsubscribe, pid}, state = %State{pubsub: pubsub}) do

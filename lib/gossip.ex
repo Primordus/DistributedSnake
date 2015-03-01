@@ -74,13 +74,13 @@ defmodule Snake.Gossip do
   end
   
   @doc false
-  def terminate(_reason, state) do
+  def terminate(_reason, _state) do
     notify_node_removed
     :ok
   end
 
   # Helper functions
-  defp process_ping(pong) do
+  defp process_ping(:pong) do
     this_node = Node.self
     # Spawns process on the first node (knows all other nodes already),
     # notifies everybody except this node of the change in the cluster.
@@ -91,7 +91,7 @@ defmodule Snake.Gossip do
 
     :ok
   end
-  defp process_ping(pang), do: :not_ok
+  defp process_ping(:pang), do: :not_ok
 
   defp notify_node_added(new_node) do
     # Sends an async message to all nodes (except new_node) that a new node
