@@ -120,6 +120,7 @@ defmodule Snake.BoardTest do
     refute Process.whereis(Board) == nil
     {:error, {:already_started, _}} = Board.start_link
     assert :ok == Board.stop
+    :timer.sleep 2
     assert Process.whereis(Board) == nil
   end
 

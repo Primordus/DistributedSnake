@@ -137,8 +137,7 @@ defmodule Snake.Board do
   end
 
   @doc false
-  def terminate(_reason, %State{left: left, right: right, 
-                                up: up, down: down}) do
+  def terminate(_reason, %State{}) do
     # Notify manager it has to remove this board from all the adjacent boards
     :ok = BoardManager.notify_board_gone(Node.self)
   end

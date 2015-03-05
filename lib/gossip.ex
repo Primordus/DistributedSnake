@@ -2,7 +2,7 @@ defmodule Snake.Gossip do
   use GenServer
   alias Snake.PubSub
 
-  # TODO make mechanism for detecting node removal better (maybe polling?)
+  # TODO improve mechanism for detecting node removal (maybe monitors/links?)
 
   @server __MODULE__
   @first_node :"pi1@tielen.local"
@@ -22,15 +22,16 @@ defmodule Snake.Gossip do
   @doc """
   Subscribes a certain process to this gossip server with a certain function.
   """
-  def subscribe(sub_function) when is_function(sub_function, 1) do
+  def subscribe(pid, sub_function) when is_pid(pid) 
+                                   and is_function(sub_function, 1) do
     :ok = @server |> GenServer.call {:subscribe, self, sub_function}
   end
 
   @doc """
   Unsubscribes a certain process from this gossip server process.
   """
-  def unsubscribe do
-    :ok = @server |> GenServer.call {:unsubscribe, self}
+  def unsubscribe(pid) when is_pid(pid) do
+    :ok = @server |> GenServer.call {:unsubscribe, pid}
   end
 
   # GenServer callbacks
@@ -39,8 +40,9 @@ defmodule Snake.Gossip do
   def init(:ok) do
     Process.flag(:trap_exit, true)
 
-    result = Node.ping @first_node
-    :ok = result |> process_ping # Crashes if ping fails.
+    @first_node 
+    |> Node.ping
+    |> process_ping # Crashes if ping fails.
 
     {:ok, pubsub} = PubSub.start_link
     {:ok, %State{pubsub: pubsub}}
