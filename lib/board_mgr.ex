@@ -12,7 +12,7 @@ defmodule Snake.BoardManager do
   remove board processes from each other.
   """
 
-  @server __MODULE__
+  @server {:global, __MODULE__}
 
   defmodule State do
 
@@ -117,14 +117,14 @@ defmodule Snake.BoardManager do
   """
   def start_link do
     args = :ok
-    GenServer.start_link(__MODULE__, args, [name: {:global, @server}])
+    GenServer.start_link(__MODULE__, args, [name: @server])
   end
 
   @doc """
   Notifies the board manager that a board is gone.
   """
   def notify_board_gone(node) do
-    @server |> GenServer.call {:removed_node, node}
+    @server |> GenServer.cast {:removed_node, node} # TODO make this a call again?
   end
 
   # GenServer callbacks:
@@ -149,14 +149,19 @@ defmodule Snake.BoardManager do
     add_board(position, node)
     {:reply, :ok, state |> State.next_state}
   end
-  def handle_call({:removed_node, node}, _from, state = %State{}) do
-    {:removed, position} = remove_board(node)
-    {:reply, :ok, state |> State.add_gap(position)}
-  end
   def handle_call(_request ,_from, state = %State{}) do
     {:reply, {:error, :not_supported}, state}
   end
-  
+
+  @doc false
+  def handle_cast({:removed_node, node}, _from, state = %State{}) do
+    {:removed, position} = remove_board(node)
+    {:reply, :ok, state |> State.add_gap(position)}
+  end 
+  def handle_cast(_request, state) do
+    {:noreply, state}
+  end
+
   @doc false
   def terminate(_reason, _state) do
     Gossip.unsubscribe

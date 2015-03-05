@@ -1,4 +1,5 @@
 defmodule Snake.Board do
+  alias Snake.Board
   alias Snake.BoardManager
 
   @moduledoc """
@@ -18,12 +19,17 @@ defmodule Snake.Board do
   @doc """
   Starts a board process.
   """
-  def start_link, do: GenServer.start_link(@server, :ok)
+  def start_link, do: GenServer.start_link(@server, :ok, [name: @server])
 
   @doc """
   Stops a board process.
   """
-  def stop(board), do: :ok = board |> GenServer.call :stop
+  def stop, do: :ok = @server |> GenServer.call :stop
+
+  @doc """
+  Returns a tuple with which you can address the board on this node easily.
+  """
+  def local_board, do: {@server, Node.self}
 
   @doc """
   Gives back a list of all boards ([{Board, Node.self}]).
@@ -33,21 +39,22 @@ defmodule Snake.Board do
   @doc """
   Gives back the board of an adjacent board (or :no_board).
   """
-  def get(:left), do: @server |> GenServer.call {:get, :left}
-  def get(:right), do: @server |> GenServer.call {:get, :right}
-  def get(:up), do: @server |> GenServer.call {:get, :up}
-  def get(:down), do: @server |> GenServer.call {:get, :down}
+  def get(:left), do: local_board |> GenServer.call {:get, :left}
+  def get(:right), do: local_board |> GenServer.call {:get, :right}
+  def get(:up), do: local_board |> GenServer.call {:get, :up}
+  def get(:down), do: local_board |> GenServer.call {:get, :down}
 
   @doc """
   Adds one board adjacent to another board. (boardX = {@server, node})
+  Parameter board can be of the form {Board, node} or a Pid.
   """
   def add(:no_board, _, _board), do: :ok
   def add(_board, _, :no_board), do: :ok
-  def add(board1 = {Board, _node1}, :left_of, board2 = {Board, _node2}) do
+  def add(board1, :left_of, board2) do
     :ok = board2 |> GenServer.call {:add, board1, :left}
     :ok = board1 |> GenServer.call {:add, board2, :right}
   end
-  def add(board1 = {Board, _node1}, :down_of, board2 = {Board, _node2}) do
+  def add(board1, :down_of, board2) do
     :ok = board2 |> GenServer.call {:add, board1, :down}
     :ok = board1 |> GenServer.call {:add, board2, :up}
   end
@@ -56,18 +63,19 @@ defmodule Snake.Board do
 
   @doc """
   Removes a board adjacent to the board that is passed in the parameters.
+  Parameter board can be of the form {Board, node} or a Pid.
   """
   def remove(_, :no_board), do: :ok
-  def remove(:left_of, board = {Board, _node}) do
+  def remove(:left_of, board) do
     :ok = board |> GenServer.call {:remove, :left}
   end
-  def remove(:right_of, board = {Board, _node}) do
+  def remove(:right_of, board) do
     :ok = board |> GenServer.call {:remove, :right}
   end
-  def remove(:up_of, board = {Board, _node}) do
+  def remove(:up_of, board) do
     :ok = board |> GenServer.call {:remove, :up}
   end
-  def remove(:down_of, board = {Board, _node}) do
+  def remove(:down_of, board) do
     :ok = board |> GenServer.call {:remove, :down}
   end
 
@@ -131,11 +139,7 @@ defmodule Snake.Board do
   @doc false
   def terminate(_reason, %State{left: left, right: right, 
                                 up: up, down: down}) do
-    remove(:left_of, right)
-    remove(:right_of, left)
-    remove(:down_of, up)
-    remove(:up_of, down)
-    
+    # Notify manager it has to remove this board from all the adjacent boards
     :ok = BoardManager.notify_board_gone(Node.self)
   end
 end
