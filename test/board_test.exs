@@ -25,56 +25,94 @@ defmodule Snake.BoardTest do
 
   test "Get local board", do: assert Board.local_board == {Board, Node.self}
 
-  test "Adding and removing other boards", %{board1: board1, board2: board2} do
-    # Board1 (unregistered) connected on all sides of board 2 (registered)
+  # TODO also test if board on other side has :no_board everywhere?
+  test "Adding and removing board (up)", %{board1: board1, board2: board2} do
     assert Board.get(:up) == :no_board
-    assert Board.get(:right) == :no_board
-    assert Board.get(:down) == :no_board
-    assert Board.get(:left) == :no_board
 
     assert :ok == Board.add(:no_board, :up_of, board2)
-    assert :ok == Board.add(:no_board, :right_of, board2)
-    assert :ok == Board.add(:no_board, :down_of, board2)
-    assert :ok == Board.add(:no_board, :left_of, board2)
+    assert :ok == Board.add(board2, :up_of, :no_board)
 
     Board.add board1, :up_of, board2
-    Board.add board1, :right_of, board2
-    Board.add board1, :down_of, board2
-    Board.add board1, :left_of, board2
     assert Board.get(:up) == board1
-    assert Board.get(:right) == board1
-    assert Board.get(:down) == board1
-    assert Board.get(:left) == board1
 
     # Adding no board should have no effect.
     assert :ok == Board.add(:no_board, :up_of, board2)
-    assert :ok == Board.add(:no_board, :right_of, board2)
-    assert :ok == Board.add(:no_board, :down_of, board2)
-    assert :ok == Board.add(:no_board, :left_of, board2)
+    assert :ok == Board.add(board2, :up_of, :no_board)
     assert Board.get(:up) == board1
-    assert Board.get(:right) == board1
+
+    # Removing :no_board should have no effect.
+    assert :ok == Board.remove(:up_of, :no_board)
+    assert Board.get(:up) == board1
+
+    Board.remove :up_of, board2
+    assert Board.get(:up) == :no_board
+  end
+
+  test "Adding and removing board (down)", %{board1: board1, board2: board2} do
+    assert Board.get(:down) == :no_board
+
+    assert :ok == Board.add(:no_board, :down_of, board2)
+    assert :ok == Board.add(board2, :down_of, :no_board)
+
+    Board.add board1, :down_of, board2
     assert Board.get(:down) == board1
+
+    # Adding no board should have no effect.
+    assert :ok == Board.add(:no_board, :down_of, board2)
+    assert :ok == Board.add(board2, :down_of, :no_board)
+    assert Board.get(:down) == board1
+
+    # Removing :no_board should have no effect.
+    assert :ok == Board.remove(:down_of, :no_board)
+    assert Board.get(:down) == board1
+
+    Board.remove :down_of, board2
+    assert Board.get(:down) == :no_board
+  end
+
+  test "Adding and removing right board (right)", %{board1: board1, board2: board2} do
+    assert Board.get(:right) == :no_board
+    
+    assert :ok == Board.add(:no_board, :right_of, board2)
+    assert :ok == Board.add(board2, :right_of, :no_board)
+
+    Board.add board1, :right_of, board2
+    assert Board.get(:right) == board1
+
+    # Adding no board should have no effect.
+    assert :ok == Board.add(:no_board, :right_of, board2)
+    assert :ok == Board.add(board2, :right_of, :no_board)
+    assert Board.get(:right) == board1
+
+    # Removing :no_board should have no effect.
+    assert :ok == Board.remove(:right_of, :no_board)
+    assert Board.get(:right) == board1
+
+    Board.remove :right_of, board2
+    assert Board.get(:right) == :no_board
+  end
+
+  test "Adding and removing board (left)", %{board1: board1, board2: board2} do
+    assert Board.get(:left) == :no_board
+
+    assert :ok == Board.add(:no_board, :left_of, board2)
+    assert :ok == Board.add(board2, :left_of, :no_board)
+
+    Board.add board1, :left_of, board2
+    assert Board.get(:left) == board1
+
+    # Adding no board should have no effect.
+    assert :ok == Board.add(:no_board, :left_of, board2)
+    assert :ok == Board.add(board2, :left_of, :no_board)
     assert Board.get(:left) == board1
 
     # Removing :no_board should have no effect.
-    Enum.map [:up_of, :down_of, :left_of, :right_of], fn(direction) ->
-      assert :ok == Board.remove(direction, :no_board)
-    end
-
-    assert Board.get(:up) == board1
-    assert Board.get(:right) == board1
-    assert Board.get(:down) == board1
+    assert :ok == Board.remove(:left_of, :no_board)
     assert Board.get(:left) == board1
 
-    Board.remove :up_of, board2
     Board.remove :left_of, board2
-    Board.remove :down_of, board2
-    Board.remove :right_of, board2
-    assert Board.get(:up) == :no_board
-    assert Board.get(:right) == :no_board
-    assert Board.get(:down) == :no_board
     assert Board.get(:left) == :no_board
-  end # TODO also test if board on other side has :no_board everywhere?
+  end 
 
   defp test_registered_process do
     assert Process.whereis(Board) == nil
