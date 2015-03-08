@@ -37,12 +37,20 @@ defmodule Snake.Board do
   def get_all, do: [Node.self | Node.list] |> Enum.map &({Board, &1})
 
   @doc """
-  Gives back the board of an adjacent board (or :no_board).
+  Gives back an adjacent board (or :no_board) of the board on this node.
   """
   def get(:left), do: local_board |> GenServer.call {:get, :left}
   def get(:right), do: local_board |> GenServer.call {:get, :right}
   def get(:up), do: local_board |> GenServer.call {:get, :up}
   def get(:down), do: local_board |> GenServer.call {:get, :down}
+
+  @doc """
+  Gives back an adjacent board (or :no_board) of the board.
+  """
+  def get(:left_of, board), do: board |> GenServer.call {:get, :left}
+  def get(:right_of, board), do: board |> GenServer.call {:get, :right}
+  def get(:up_of, board), do: board |> GenServer.call {:get, :up}
+  def get(:down_of, board), do: board |> GenServer.call {:get, :down}
 
   @doc """
   Adds one board adjacent to another board. (boardX = {@server, node})
@@ -134,6 +142,9 @@ defmodule Snake.Board do
   def handle_call(:stop, _from, state = %State{}) do
     reply = :ok
     {:stop, :normal, reply, state}
+  end
+  def handle_call(_request, state) do
+    {:reply, {:error, :not_supported}, state}
   end
 
   @doc false

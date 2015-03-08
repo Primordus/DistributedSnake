@@ -21,7 +21,8 @@ defmodule Snake.BoardManager do
     to update the state.
     """
 
-    defstruct position: {0, 0}, 
+    defstruct table: :no_pid,
+              position: {0, 0}, 
               last_direction: :right, 
               steps_left: 2,
               step_counter: 1, # memorizes how many steps per side of the spiral
@@ -36,14 +37,13 @@ defmodule Snake.BoardManager do
                                   steps_left: 0,
                                   step_counter: steps,
                                   gaps: []}) do
-      # TODO test entire function with unit test later!
       # Special case: change direction + update steps and step counter.
       new_direction = old_direction |> change_direction
       new_position = {old_position, new_direction} |> change_position
       %State{state | position: new_position,
                       last_direction: new_direction,
                       step_counter: steps + 1,
-                      steps_left: 2 * (steps + 1),
+                      steps_left: 2 * steps + 1, # TODO error here?
                       old_position_saved: false}
     end
     def next_state(state = %State{position: old_position,
@@ -106,9 +106,11 @@ defmodule Snake.BoardManager do
     defp change_position({{x, y}, :left}), do: {x - 1, y}
 
     defp append_to_list(list, item) do
-      list |> Enum.reverse |> Enum.reverse(item)
+      list |> Enum.reverse |> Enum.reverse([item])
     end
   end
+
+
 
   # API:
   
@@ -116,15 +118,21 @@ defmodule Snake.BoardManager do
   Starts a board manager process.
   """
   def start_link do
-    args = :ok
     GenServer.start_link(__MODULE__, args, [name: @server])
+  end
+
+  @doc """
+  Notifies the board manager that a board has been added.
+  """
+  def notify_board_added(board) do
+    @server |> GenServer.cast {:board_added, board} # TODO make this a call?
   end
 
   @doc """
   Notifies the board manager that a board is gone.
   """
-  def notify_board_gone(node) do
-    @server |> GenServer.cast {:removed_node, node} # TODO make this a call again?
+  def notify_board_gone(board) do
+    @server |> GenServer.cast {:board_gone, board} # TODO make this a call again?
   end
 
   # GenServer callbacks:
@@ -132,31 +140,35 @@ defmodule Snake.BoardManager do
   @doc false
   def init(:ok) do
     Process.flag(:trap_exit, true)
-    BoardDB.init
-    Gossip.subscribe fn
-      (msg = {:added_node, _node}) ->
-        :ok = GenServer.call(@server, msg)
+    table = BoardDB.init
+    Gossip.subscribe self, fn
+      ({:added_node, node}) ->
+        node 
+        |> to_board 
+        |> notify_board_added
       ({:removed_node, node}) ->
-        :ok = notify_board_gone(node)
+        node 
+        |> to_board 
+        |> notify_board_gone
     end
 
-    {:ok, %State{}}
+    {:ok, %State{table: table}}
   end
 
   @doc false
-  def handle_call({:added_node, node}, _from, 
-                  state = %State{position: position}) do
-    add_board(position, node)
-    {:reply, :ok, state |> State.next_state}
-  end
   def handle_call(_request ,_from, state = %State{}) do
     {:reply, {:error, :not_supported}, state}
   end
 
   @doc false
-  def handle_cast({:removed_node, node}, _from, state = %State{}) do
-    {:removed, position} = remove_board(node)
-    {:reply, :ok, state |> State.add_gap(position)}
+  def handle_cast({:board_added, board}, 
+                  state = %State{table: table, position: position}) do
+    table |> add_board(position, board)
+    {:noreply, state |> State.next_state}
+  end
+  def handle_cast({:board_gone, board}, state = %State{table: table}) do
+    {:removed, position} = table |> remove_board(board)
+    {:noreply, state |> State.add_gap(position)}
   end 
   def handle_cast(_request, state) do
     {:noreply, state}
@@ -164,21 +176,19 @@ defmodule Snake.BoardManager do
 
   @doc false
   def terminate(_reason, _state) do
-    Gossip.unsubscribe
-    BoardDB.destroy
+    self |> Gossip.unsubscribe
+    # Table is automatically cleaned up.
     :ok
   end
 
   # Helper functions:
 
-  defp add_board(position = {x, y}, node) do
-    new_board = node |> to_board
-    BoardDB.add(position, new_board)
-    
-    up = BoardDB.get {x, y + 1} 
-    down = BoardDB.get {x, y - 1}
-    right = BoardDB.get {x + 1, y}
-    left = BoardDB.get {x - 1, y}
+  defp add_board(table, position = {x, y}, new_board) do
+    table |> BoardDB.add(position, new_board)
+    up = table |> BoardDB.get {x, y + 1} 
+    down = table |> BoardDB.get {x, y - 1}
+    right = table |> BoardDB.get {x + 1, y}
+    left = table |> BoardDB.get {x - 1, y}
 
     Board.add(up, :up_of, new_board)
     Board.add(down, :down_of, new_board)
@@ -188,25 +198,23 @@ defmodule Snake.BoardManager do
     :ok
   end
 
-  defp remove_board(node) do
-    # Note: the node is already removed from the cluster!
+  defp remove_board(table, board) do
+    # Note: the node this board is on is already removed from the cluster!
     # This makes it impossible to simply clean up from the board process itself.
-    node 
-    |> to_board 
-    |> BoardDB.get_key
-    |> do_remove
+    position = table |> BoardDB.get_key(board)
+    table |> do_remove(position)
   end
 
-  defp do_remove(:no_position) do
+  defp do_remove(_table, :no_position) do
     {:removed, :no_position}
   end
-  defp do_remove(position = {x, y}) do
-    BoardDB.remove(position)
+  defp do_remove(table, position = {x, y}) do
+    table |> BoardDB.delete(position)
 
-    up = BoardDB.get {x, y + 1} 
-    down = BoardDB.get {x, y - 1}
-    right = BoardDB.get {x + 1, y}
-    left = BoardDB.get {x - 1, y}
+    up = table |> BoardDB.get {x, y + 1} 
+    down = table |> BoardDB.get {x, y - 1}
+    right = table |> BoardDB.get {x + 1, y}
+    left = table |> BoardDB.get {x - 1, y}
 
     Board.remove(:down_of, up)
     Board.remove(:up_of, down)
@@ -216,5 +224,7 @@ defmodule Snake.BoardManager do
     {:removed, position}
   end
 
-  defp to_board(node), do: {:board, node}
+  defp to_board(node), do: {Board, node}
+
+  defp args, do: :ok
 end
