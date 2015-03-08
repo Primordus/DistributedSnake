@@ -6,39 +6,36 @@ defmodule Snake.GossipTest do
   Tests for the gossip module.
   """
 
-  setup_all do
-    # Test registering of process:
-    assert Process.whereis(Gossip) == nil
-    {:ok, _pid} = Gossip.start_link
+  test "Gossip is a registered process" do
     refute Process.whereis(Gossip) == nil
-
-    :ok
   end
 
   test "Subscribing and unsubscribing to gossip process" do
     pid = self
     delay = 10
+    a_node = Node.self
 
-    simulate_node_added :dummy_node1
-    refute_receive :dummy_node1, delay
+    simulate_node_added a_node
+    refute_receive {:added_node, ^a_node}, delay
+    simulate_node_removed a_node
+    refute_receive {:removed_node, ^a_node}, delay
 
     Gossip.subscribe self, fn(event) ->
       pid |> send event
     end
 
-    simulate_node_added :dummy_node2
-    assert_receive {:added_node, :dummy_node2}
-
-    simulate_node_removed :dummy_node3
-    assert_receive {:removed_node, :dummy_node3}
+    simulate_node_added(a_node)
+    assert_receive {:added_node, ^a_node}
+    simulate_node_removed(a_node)
+    assert_receive {:removed_node, ^a_node}
 
     Gossip.unsubscribe self
-    simulate_node_added :dummy_node4
-    refute_receive {:added_node, :dummy_node4}, delay
-
-    simulate_node_removed :dummy_node5
-    refute_receive {:removed_node, :dummy_node5}, delay
-  end
+    
+    simulate_node_added a_node
+    refute_receive {:added_node, ^a_node}, delay
+    simulate_node_removed a_node
+    refute_receive {:removed_node, ^a_node}, delay
+ end
 
   # Next test was tested manually.
   # test "Node addition and removal" do

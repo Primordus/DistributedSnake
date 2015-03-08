@@ -1,13 +1,23 @@
 defmodule Snake.TickerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias Snake.Ticker
 
   @moduledoc """
   Tests for the ticker module.
   """
 
+  setup_all do
+    Application.ensure_started :snake
+    sleep 10  # wait for supervisor tree to start completely
+    assert Ticker in :global.registered_names
+    :global.unregister_name Ticker
+    refute Ticker in :global.registered_names
+    :ok
+  end
+
   test "Starting of ticker process (0 args)." do
     {:ok, _ticker} = Ticker.start_link
+    :global.unregister_name Ticker
   end
 
   test "Starting of ticker process (1 arg)" do
@@ -70,4 +80,6 @@ defmodule Snake.TickerTest do
     Ticker.unsubscribe self
     refute_receive :tick, 2 * delay
   end
+
+  defp sleep(ms), do: :timer.sleep(ms)
 end

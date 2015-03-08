@@ -14,6 +14,6 @@ defmodule Snake.GameSupervisor do
             worker(BoardManager, []),
             worker(Board, []),
             worker(Ticker, [])]
-    supervise(tree, :one_for_all)
+    supervise(tree, strategy: :one_for_all)
   end
 end

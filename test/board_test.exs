@@ -1,6 +1,5 @@
 defmodule Snake.BoardTest do
   use ExUnit.Case
-  alias Snake.Gossip
   alias Snake.Board
   alias Snake.BoardManager
   alias Snake.BoardManager.State
@@ -10,28 +9,40 @@ defmodule Snake.BoardTest do
   Tests for Board, BoardManager (including state) and BoardDB.
   """
 
-  setup_all do
+  setup_all do # triggered once before all tests
+    Application.ensure_all_started :snake
     # Check if board = local registered process:
-    assert Process.whereis(Board) == nil
-    Board.start_link
+
+    {:error, {:already_started, board_pid}} = Board.start_link
+    assert Process.alive?(board_pid)
     refute Process.whereis(Board) == nil
-    {:error, {:already_started, _}} = Board.start_link
     assert :ok == Board.stop
-    sleep 2
     assert Process.whereis(Board) == nil
+    refute Process.alive?(board_pid)
+    
+    # Give supervisor time to restart board,
+    # otherwise Process.unregister crashes.
+    sleep 30  # TODO refactor later!
 
     # Check if board manager = global registered process:
-    refute BoardManager in :global.registered_names
-    Gossip.start_link
-    BoardManager.start_link
     assert BoardManager in :global.registered_names
 
-
     # Initialize 2 boards (1 registered, 1 unregistered)
+    Process.unregister Board # Supervisor has restarted board by now.
     board1 = new_board
     {:ok, board2} = Board.start_link
 
     {:ok, board1: board1, board2: board2}
+  end
+
+  setup context do  # triggered during each test.
+    board1 = context[:board1]
+    board2 = context[:board2]
+
+    on_exit fn ->  # also triggered after each test.
+      clean board1
+      clean board2
+    end
   end
 
   # Tests for board module:
@@ -258,7 +269,6 @@ defmodule Snake.BoardTest do
     assert BoardManager.notify_board_added(unregistered_board) == :ok
     assert BoardManager.notify_board_added(registered_board) == :ok
     assert BoardManager.notify_board_added(unregistered_board) == :ok
-    sleep 20
     
     assert Board.get(:left_of, registered_board) == unregistered_board
     assert Board.get(:down_of, registered_board) == unregistered_board
@@ -286,5 +296,12 @@ defmodule Snake.BoardTest do
     board
   end
 
-  def sleep(ms), do: :timer.sleep(ms)
+  defp clean(board) do
+    Board.remove :up_of, board
+    Board.remove :down_of, board
+    Board.remove :left_of, board
+    Board.remove :right_of, board
+  end
+  
+  defp sleep(ms), do: :timer.sleep(ms)
 end

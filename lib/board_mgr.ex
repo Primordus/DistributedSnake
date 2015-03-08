@@ -125,14 +125,14 @@ defmodule Snake.BoardManager do
   Notifies the board manager that a board has been added.
   """
   def notify_board_added(board) do
-    @server |> GenServer.cast {:board_added, board} # TODO make this a call?
+    :ok = @server |> GenServer.call {:board_added, board}
   end
 
   @doc """
   Notifies the board manager that a board is gone.
   """
   def notify_board_gone(board) do
-    @server |> GenServer.cast {:board_gone, board} # TODO make this a call again?
+    :ok = @server |> GenServer.call {:board_gone, board}
   end
 
   # GenServer callbacks:
@@ -156,20 +156,20 @@ defmodule Snake.BoardManager do
   end
 
   @doc false
+  def handle_call({:board_added, board}, _from,
+                  state = %State{table: table, position: position}) do
+    table |> add_board(position, board)
+    {:reply, :ok, state |> State.next_state}
+  end
+  def handle_call({:board_gone, board}, _from, state = %State{table: table}) do
+    {:removed, position} = table |> remove_board(board)
+    {:reply, :ok, state |> State.add_gap(position)}
+  end 
   def handle_call(_request ,_from, state = %State{}) do
     {:reply, {:error, :not_supported}, state}
   end
 
   @doc false
-  def handle_cast({:board_added, board}, 
-                  state = %State{table: table, position: position}) do
-    table |> add_board(position, board)
-    {:noreply, state |> State.next_state}
-  end
-  def handle_cast({:board_gone, board}, state = %State{table: table}) do
-    {:removed, position} = table |> remove_board(board)
-    {:noreply, state |> State.add_gap(position)}
-  end 
   def handle_cast(_request, state) do
     {:noreply, state}
   end

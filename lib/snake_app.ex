@@ -5,11 +5,10 @@ defmodule Snake do
     import Supervisor.Spec, warn: false
 
     children = [
-      # Start the endpoint when the application starts
-      worker(Snake.Endpoint, []),
-      
-      # Here you could define other workers and supervisors as children
-      # worker(Snake.Worker, [arg1, arg2, arg3]),
+      # Top supervisor for the snake game:
+      supervisor(Snake.TopSupervisor, []),
+      # Start the endpoint when the application starts:
+      worker(Snake.Endpoint, [])
     ]
 
     opts = [strategy: :one_for_one, name: Snake.Supervisor]
