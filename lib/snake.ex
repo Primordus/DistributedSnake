@@ -4,16 +4,16 @@ defmodule Snake.Snake do
   alias Snake.Ticker
   alias Snake.Insect
   alias Snake.Board
-
+  alias Snake.GUI
+  
   # TODO check for errors (mostly move/collision part)!
 
   @server __MODULE__
-  @gui Phoenix.Channel 
-  # TODO make gui.ex with small helper functions to draw stuff.
 
   # TODO refactor following items to the board module
   @width 10
   @height 10
+
   @score 10
 
   defmodule State do
@@ -183,7 +183,7 @@ defmodule Snake.Snake do
   end
 
   @doc false
-  def terminate(_reason, _state = %State{segment: :head}) do
+  def terminate(_reason, %State{segment: :head}) do
     self |> Ticker.unsubscribe 
     :ok
   end
@@ -194,20 +194,21 @@ defmodule Snake.Snake do
   # GUI related
 
   defp update_score(:no_collision), do: :ok
-  defp update_score(:collision) do
-    @gui.broadcast("score", @score)
-  end
+  defp update_score(:collision), do: GUI.update_score(%{score: @score})
 
-  defp draw(%State{position: {x, y}, next_segment: :no_pid}) do
-    # TODO add node support
-    draw_segment(x, y)
+  defp draw(%State{position: {x, y}, node: a_node, next_segment: :no_pid}) do
+    # TODO maybe work with diff here, draw it on next x,y 
+    # but clear previous rectangle => lock canvas during each draw?
+    draw_segment(x, y, a_node)
   end
-  defp draw(%State{position: {x, y}, next_segment: next}) do
-    draw_segment(x, y)
+  defp draw(%State{position: {x, y}, node: a_node, next_segment: next}) do
+    draw_segment(x, y, a_node)
     next |> GenServer.cast :draw # TODO make this a call?
   end
 
-  defp draw_segment(x, y), do: @gui.broadcast("draw_snake", {x, y})
+  defp draw_segment(x, y, a_node) do
+    GUI.draw_snake(%{x: x, y: y, node: a_node, color: color})
+  end
 
   # Other helpers
 
@@ -294,5 +295,20 @@ defmodule Snake.Snake do
   defp handle_collision({:is_collision, false}), do: :ok
   defp handle_collision({:is_collision, true}) do
     self |> GenServer.cast :gameover
+  end
+  
+  defp color do
+    colors = [:orange, :green, :blue, :cyan, :yellow, :purple, :white]
+    length = 7
+    pick_random colors, length
+  end
+
+  defp pick_random(list, length_of_list) do
+    # Generate random number:
+    <<a :: 32, b :: 32, c :: 32>> = :crypto.rand_bytes(12)
+    :random.seed {a, b, c}
+    
+    random_index = Float.round(:random.uniform * length_of_list)
+    list |> Enum.at random_index
   end
 end
