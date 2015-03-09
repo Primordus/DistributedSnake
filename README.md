@@ -14,3 +14,4 @@ Snake on multiple computers. Based on Erlang and Elixir.
 2. insect.erl: everything involving the bug in the game
 3. input.erl: reading input from keyboard
 4. Add functions to snake.js to draw everything on screen.
+5. Update mix.exs with registered processes.

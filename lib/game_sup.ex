@@ -6,8 +6,16 @@ defmodule Snake.GameSupervisor do
   alias Snake.Board
   alias Snake.Ticker
 
+  @moduledoc """
+  Supervisor for the snake game.
+  """
+
+  @doc """
+  Starts the game supervisor.
+  """
   def start_link(:ok), do: Supervisor.start_link(__MODULE__, :ok)
 
+  @doc false
   def init(:ok) do
     tree = [supervisor(SnakeSupervisor, [:ok]),
             supervisor(InsectSupervisor, [:ok]),

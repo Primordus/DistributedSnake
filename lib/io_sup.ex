@@ -4,8 +4,16 @@ defmodule Snake.IO_Supervisor do
   alias Snake.LedSupervisor
   alias Snake.ButtonSupervisor
 
+  @moduledoc """
+  Supervisor for everything IO related (buttons, LEDs, ...)
+  """
+
+  @doc """
+  Starts the IO supervisor.
+  """
   def start_link(:ok), do: Supervisor.start_link(__MODULE__, :ok)
 
+  @doc false
   def init(:ok) do
     tree = [#worker(Input, []),
             supervisor(LedSupervisor, [:ok]),
