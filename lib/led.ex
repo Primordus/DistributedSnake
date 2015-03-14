@@ -40,6 +40,13 @@ defmodule Snake.LED do
   """
   def off(led) when is_pid(led), do: :ok = led |> GenServer.call :off
 
+  @doc """
+  TODO
+  """
+  def pulse(led, time \\ 500) when is_pid(led) and time > 0 do 
+    led |> GenServer.cast {:pulse, time}   
+  end
+
   # GenServer callbacks
 
   @doc false
@@ -67,5 +74,20 @@ defmodule Snake.LED do
   end
 
   @doc false
+  def handle_cast({:pulse, time}, state = %State{pin: pin}) do
+    pin |> GPIO.digital_write :high
+    sleep time
+    pin |> GPIO.digital_write :low
+    {:noreply, state}
+  end
+  def handle_cast(_request, state = %State{}) do
+    {:noreply, state}
+  end
+
+  @doc false
   def terminate(_reason, %State{pin: pin}), do: pin |> GPIO.pin_release
+
+  # Helper functions
+
+  defp sleep(time), do: :timer.sleep(time)
 end

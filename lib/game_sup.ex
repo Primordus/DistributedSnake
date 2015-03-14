@@ -1,5 +1,6 @@
 defmodule Snake.GameSupervisor do
   use Supervisor
+  alias Snake.TileSupervisor
   alias Snake.SnakeSupervisor
   alias Snake.InsectSupervisor
   alias Snake.BoardManager
@@ -17,7 +18,8 @@ defmodule Snake.GameSupervisor do
 
   @doc false
   def init(:ok) do
-    tree = [supervisor(SnakeSupervisor, [:ok]),
+    tree = [supervisor(TileSupervisor, [:ok]),
+            supervisor(SnakeSupervisor, [:ok]),
             supervisor(InsectSupervisor, [:ok]),
             worker(BoardManager, []),
             worker(Board, []),

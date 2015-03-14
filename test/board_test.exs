@@ -146,7 +146,7 @@ defmodule Snake.BoardTest do
 
   # Board DB tests:
 
-  test "Creating table" do
+  test "Creating board table" do
       table = BoardDB.init
       refute :ets.info(table) == :undefined
       assert is_integer(table)
