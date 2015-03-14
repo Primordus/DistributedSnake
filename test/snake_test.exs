@@ -2,8 +2,6 @@ defmodule SnakeTest do
   use ExUnit.Case, async: true
   alias Snake.SnakeSupervisor
   alias Snake.InsectSupervisor
-  alias Snake.ButtonSupervisor
-  alias Snake.LEDSupervisor
   alias Snake.Snake.State, as: SnakeState
   alias Snake.Insect.State, as: InsectState
 

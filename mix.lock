@@ -1,5 +1,6 @@
 %{"cowboy": {:hex, :cowboy, "1.0.0"},
   "cowlib": {:hex, :cowlib, "1.0.1"},
+  "gpio_rpi": {:git, "git://github.com/Primordus/gpio_rpi.git", "d3a58f031aa7a33692a7d85865be34c1484c3d6d", []},
   "phoenix": {:hex, :phoenix, "0.8.0"},
   "plug": {:hex, :plug, "0.9.0"},
   "poison": {:hex, :poison, "1.3.1"},

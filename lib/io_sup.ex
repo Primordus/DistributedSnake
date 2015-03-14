@@ -1,11 +1,9 @@
 defmodule Snake.IO_Supervisor do
   use Supervisor
   alias Snake.Input
-  alias Snake.LedSupervisor
-  alias Snake.ButtonSupervisor
 
   @moduledoc """
-  Supervisor for everything IO related (buttons, LEDs, ...)
+  Supervisor for the game input (joystick / keyboard).
   """
 
   @doc """
@@ -15,9 +13,9 @@ defmodule Snake.IO_Supervisor do
 
   @doc false
   def init(:ok) do
-    tree = [#worker(Input, []),
-            supervisor(LedSupervisor, [:ok]),
-            supervisor(ButtonSupervisor, [:ok])]
+    tree = [
+      #worker(Input, [])
+    ]
     supervise(tree, strategy: :one_for_all)
   end
 end

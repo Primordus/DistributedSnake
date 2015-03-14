@@ -9,10 +9,6 @@ defmodule Snake.Tile do
   the GUI.
   """
 
-  # Geen manager nodig, alleen ETS tabel aangemaakt door sup, 
-  # slaat pids op per node per coordinaat
-  # tiles zelf plaatsen hun eigen in die tabel
-
   defmodule State do
     @default_value quote do: throw "argument not defined!"
     defstruct table: @default_value,

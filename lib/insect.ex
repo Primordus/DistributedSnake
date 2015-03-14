@@ -2,10 +2,10 @@ defmodule Snake.Insect do
   use GenServer
   use Snake.Game
   alias Snake.Ticker
-  alias Snake.LED
   alias Snake.Snake
   alias Snake.InsectSupervisor
   alias Snake.GUI
+  alias GPIO.LED
 
   @server __MODULE__
   @default_counter 10
