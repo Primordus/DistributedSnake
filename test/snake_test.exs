@@ -1,9 +1,7 @@
-defmodule SnakeTest do
+defmodule Snake.SnakeTest do
   use ExUnit.Case, async: true
   alias Snake.SnakeSupervisor
-  alias Snake.InsectSupervisor
   alias Snake.Snake.State, as: SnakeState
-  alias Snake.Insect.State, as: InsectState
 
   @moduledoc """
   Tests for application and supervisor tree.
@@ -32,14 +30,4 @@ defmodule SnakeTest do
   # InsectSupervisor.start_child node, %{x: 0, y: 1, node: Node.self}
   #  assert count_children(InsectSupervisor) == 2
   #end
- 
-  # LED and button should only be tested on Raspberry Pi 2.
-  # Tests similar to previous 2
-
-  defp count_children(sup) do
-    %{workers: amount} = sup |> Supervisor.count_children
-    amount
-  end
-
-  defp sleep(ms), do: :timer.sleep(ms)
 end

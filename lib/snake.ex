@@ -54,6 +54,13 @@ defmodule Snake.Snake do
     GenServer.start_link(__MODULE__, args)
   end
 
+  @doc """
+  Returns all positions (list of {x, y, node}) the snake is on.
+  """
+  def get_positions do
+    [{0,0, Node.self}] # TODO implement this
+  end
+
   # GenServer callbacks
 
   @doc false

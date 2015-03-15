@@ -17,36 +17,36 @@ defmodule Snake.TileTest do
 
   # Tile DB tests
 
-  test "Creating tile table" do
-    table = TileDB.init
-    assert is_integer(table)
-    refute :ets.info(table) == :undefined
+  test "Tile table is created in supervision tree, can only be created once" do
+    info = :ets.info(TileDB)
+    refute info == :undefined
+    TileDB.init
+    assert :ets.info(TileDB) == info
   end
 
   test "CRUD operations" do
     e = FunctionClauseError
     pos = {0, 1000}
-    table = TileDB.init
 
     # Create
-    assert_raise e, fn -> table |> TileDB.add :bla, self end
-    assert_raise e, fn -> table |> TileDB.add {:bla, 0}, self end
-    assert_raise e, fn -> table |> TileDB.add {0, :bla}, self end 
-    assert_raise e, fn -> table |> TileDB.add {0, 0}, :bla end 
-    assert table |> TileDB.add(pos, self)
+    assert_raise e, fn -> TileDB.add :bla, self end
+    assert_raise e, fn -> TileDB.add {:bla, 0}, self end
+    assert_raise e, fn -> TileDB.add {0, :bla}, self end 
+    assert_raise e, fn -> TileDB.add {0, 0}, :bla end 
+    assert TileDB.add(pos, self)
 
     # Read
-    assert_raise e, fn -> table |> TileDB.delete :bla end
-    assert_raise e, fn -> table |> TileDB.delete {:bla, 0} end
-    assert_raise e, fn -> table |> TileDB.delete {0, :bla} end
-    assert table |> TileDB.get({-1, -1}) == :no_tile
-    assert table |> TileDB.get(pos) == self
+    assert_raise e, fn -> TileDB.delete :bla end
+    assert_raise e, fn -> TileDB.delete {:bla, 0} end
+    assert_raise e, fn -> TileDB.delete {0, :bla} end
+    assert TileDB.get({-1, -1}) == :no_tile
+    assert TileDB.get(pos) == self
 
     # Update => not supported
 
     # Delete
-    table |> TileDB.delete(pos)
-    assert table |> TileDB.get(pos) == :no_tile
+    TileDB.delete(pos)
+    assert TileDB.get(pos) == :no_tile
   end
 
   # Tile tests
@@ -54,8 +54,7 @@ defmodule Snake.TileTest do
   test "Notify arrival / gone (snake)" do
     e = MatchError
     snake = self
-    table = TileDB.init
-    {:ok, tile} = Tile.start_link %{table: table, x: 5, y: 5}
+    {:ok, tile} = spawn_tile %{x: 5, y: 5}
     
     assert :ok == Tile.notify_arrival(tile, :snake, snake, :red)
     assert_raise e, fn -> Tile.notify_arrival(tile, :snake, snake, :green) end
@@ -67,8 +66,7 @@ defmodule Snake.TileTest do
   test "Notify arrival / gone (insect)" do
     e = MatchError
     insect = self
-    table = TileDB.init
-    {:ok, tile} = Tile.start_link %{table: table, x: 5, y: 5}
+    {:ok, tile} = spawn_tile %{x: 6, y: 6}
     
     assert :ok == Tile.notify_arrival(tile, :insect, insect)
     assert_raise e, fn -> Tile.notify_arrival(tile, :insect, insect) end
@@ -82,8 +80,7 @@ defmodule Snake.TileTest do
     e = MatchError
     snake = self
     insect = spawn_dummy
-    table = TileDB.init
-    {:ok, tile} = Tile.start_link %{table: table, x: 5, y: 5}
+    {:ok, tile} = spawn_tile %{x: 7, y: 7}
     
     assert :ok == Tile.notify_arrival(tile, :snake, snake, :red)
     assert_raise e, fn -> Tile.notify_arrival(tile, :insect, insect) end
@@ -111,5 +108,12 @@ defmodule Snake.TileTest do
         _ -> :ok
       end
     end
+  end
+
+  defp spawn_tile(args = %{x: x, y: y}) do
+    # First delete from table (supervision tree starts 100 tiles already)
+    # Otherwise a double entry would be added to table => forbidden!
+    TileDB.delete {x, y}
+    Tile.start_link args
   end
 end

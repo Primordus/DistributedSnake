@@ -11,8 +11,7 @@ defmodule Snake.Tile do
 
   defmodule State do
     @default_value quote do: throw "argument not defined!"
-    defstruct table: @default_value,
-              x: @default_value, 
+    defstruct x: @default_value, 
               y: @default_value,
               occupied_with: :no_pid
   end
@@ -22,9 +21,9 @@ defmodule Snake.Tile do
   @doc """
   Starts a tile process at location {X, Y}.
   """
-  def start_link(args = %{table: table, x: x, y: y}) 
-      when is_integer(table) and is_integer(x) and is_integer(y)
-      and x > -1 and x < width and y > -1 and y < height do
+  def start_link(args = %{x: x, y: y}) when is_integer(x) and is_integer(y)
+                                        and x > -1 and x < width 
+                                        and y > -1 and y < height do
     GenServer.start_link(__MODULE__, args)
   end
 
@@ -55,9 +54,9 @@ defmodule Snake.Tile do
   # GenServer callbacks
 
   @doc false
-  def init(%{table: table, x: x, y: y}) do
-    table |> TileDB.add({x, y}, self)
-    {:ok, %State{table: table, x: x, y: y}}
+  def init(%{x: x, y: y}) do
+    TileDB.add {x, y}, self
+    {:ok, %State{x: x, y: y}}
   end
 
   @doc false
@@ -92,8 +91,8 @@ defmodule Snake.Tile do
   end
 
   @doc false
-  def terminate(_reason, %State{table: table, x: x, y: y}) do
-    table |> TileDB.delete {x, y}
+  def terminate(_reason, %State{x: x, y: y}) do
+    TileDB.delete {x, y}
     :ok
   end
 end

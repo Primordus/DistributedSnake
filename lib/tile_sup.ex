@@ -18,14 +18,15 @@ defmodule Snake.TileSupervisor do
   """
   def start_link(:ok) do
     {:ok, pid} = Supervisor.start_link(__MODULE__, :ok, [name: @sup])
-    TileDB.init |> spawn_tiles
+    TileDB.init
+    spawn_tiles
     {:ok, pid}
   end
 
   @doc """
   Starts a tile process in the supervision tree.
   """
-  def start_child(args = %{table: _table, x: _x, y: _y}) do
+  def start_child(args = %{x: _x, y: _y}) do
     @sup |> Supervisor.start_child [args]
   end
 
@@ -40,20 +41,20 @@ defmodule Snake.TileSupervisor do
   # Helper functions
 
   defp spawn_tiles(:finished), do: :ok
-  defp spawn_tiles(args = {{_x, _y}, _table}) do
+  defp spawn_tiles(args = {_x, _y}) do
     args 
     |> spawn_tile
     |> next_position
     |> spawn_tiles
   end
-  defp spawn_tiles(table), do: spawn_tiles {{width, height}, table}
+  defp spawn_tiles, do: spawn_tiles {width, height}
 
-  defp spawn_tile(args = {{x, y}, table}) do
-    start_child %{table: table, x: x, y: y}
+  defp spawn_tile(args = {x, y}) do
+    start_child %{x: x, y: y}
     args
   end
 
-  defp next_position({{-1, -1}, _table}), do: :finished
-  defp next_position({{x, -1}, table}), do: {{x - 1, height}, table}
-  defp next_position({{x, y}, table}), do: {{x, y - 1}, table}
+  defp next_position({-1, -1}), do: :finished
+  defp next_position({x, -1}), do: {x - 1, height}
+  defp next_position({x, y}), do: {x, y - 1}
 end

@@ -1,100 +1,135 @@
 defmodule Snake.Insect do
   use GenServer
   use Snake.Game
-  alias Snake.Ticker
-  alias Snake.Snake
   alias Snake.InsectSupervisor
-  alias Snake.GUI
+  alias Snake.Ticker
+  alias Snake.Tile
+  alias Snake.TileDB, as: TileDB
+  alias Snake.Random
+  alias Snake.Snake # put this alias last, transforms all others!
   alias GPIO.LED
 
-  @server __MODULE__
+  @moduledoc """
+  Module that contains the logic for the insect process.
+  """
+
+  @server {:global, __MODULE__}
   @default_counter 10
-  @max 10
 
   defmodule State do
-    defstruct x: 0, y: 0, led: :no_pid, counter: 10, alive: false
+    @default_value quote do: throw "Invalid value for state!"
+    defstruct x: @default_value, 
+              y: @default_value, 
+              led: @default_value, 
+              counter: @default_value
   end
+
 
   # API
 
-  def start_link(args = %{x: _x, y: _y}) do
-    GenServer.start_link(__MODULE__, args) # TODO register?
+  @doc """
+  Starts a insect process at location {x, y} on this node.
+  """
+  def start_link(led, _args = %{x: x, y: y}) do
+    GenServer.start_link(__MODULE__, %{x: x, y: y, led: led}, [name: @server])
   end
 
-  def get_location(pid) do
-    pid |> GenServer.call :get_location
-  end
+  @doc """
+  Gives back the location of the insect process. 
+  Return value is a tuple of the following form: {x, y, node}.
+  """
+  def get_location, do: @server |> GenServer.call :get_location
 
-  def kill(insect) do
-    insect |> GenServer.call :kill
-  end
+  @doc """
+  Kills the current insect.
+  """
+  def kill, do: :ok = @server |> GenServer.call :kill
+
 
   # GenServer callbacks
 
-  def init(%{x: x, y: y}) do
+  @doc false
+  def init(%{x: x, y: y, led: led}) do
     insect = self
     Ticker.subscribe insect, fn(:tick) ->
       insect |> update_state
     end
 
-    # Generate random seed:
-    <<a :: 32, b :: 32, c :: 32>> = :crypto.rand_bytes(12)
-    :random.seed {a, b, c}
-
-    pin = 18
-    {:ok, led} = LED.start_link(pin)
+    tile_notify_arrived(x, y)
+    Random.generate_seed 
     
-    {:ok, %State{x: x, y: y, led: led}}
+    {:ok, %State{x: x, y: y, led: led, counter: @default_counter}}
   end
 
+  @doc false
   def handle_call(:get_location, _from, state = %State{x: x, y: y}) do
-    reply = {:location, {x, y, node}}
-    {:reply, reply, state}
-  end
-
-  def handle_call(:update_state, _from, state = %State{x: x, y: y, 
-                                                        counter: 0}) do
-    random_node = [Node.self | Node.list] |> random_element
-    random_x = random_number(@max)
-    random_y = random_number(@max)
-
-    if random_node == Node.self do 
-        {:reply, :ok, %State{state | x: random_x, y: random_y, counter: @default_counter}}
-    else
-        # Other node!
-        
-    end
-  end
-  def handle_call(:update_state, _from, state = %State{x: x, y: y, 
-                                                        counter: counter}) do
-    {:reply, :ok, %State{state | counter: counter - 1}}
+    {:reply, {x, y, node}, state}
   end
   def handle_call(:kill, _from, state = %State{led: led}) do
-    # Score updaten + IO aansturen!
     led |> LED.pulse
+    state |> spawn_new_insect
     {:stop, :normal, :ok, state}
+  end
+  def handle_call(:update_state, _from, state = %State{counter: 0}) do
+    state |> spawn_new_insect
+    {:stop, :normal, :ok, state}
+  end
+  def handle_call(:update_state, _from, state = %State{counter: counter}) do
+    {:reply, :ok, %State{state | counter: counter - 1}}
+  end
+
+  @doc false
+  def terminate(_reason, _state) do
+    self |> Ticker.unsubscribe
+    :ok
   end
 
   # Helper functions
 
-  defp active? do
-
+  defp spawn_new_insect(state = %State{x: x, y: y}) do
+    snake_positions = Snake.get_positions
+    {new_x, new_y, new_node} = find_new_position(snake_positions)
+   
+    # TODO try to put the following lines in terminate function?
+    tile_notify_gone(x, y) 
+    :global.unregister_name __MODULE__  # TODO refactor this later
+    InsectSupervisor.start_child(%{x: new_x, y: new_y, node: new_node})
   end
 
-  defp random_number(max) do
-    Float.floor(:random.uniform * max)
+  defp find_new_position(snake_positions) do
+    random_x = Random.number(width)
+    random_y = Random.number(height)
+    random_node = [Node.self | Node.list] |> Random.element
+
+    snake_positions 
+    |> Enum.filter(fn({x, y, a_node}) ->
+      x == random_x && y == random_y && a_node == random_node
+    end)
+    |> check_for_collision
+    |> handle_collision(snake_positions, {random_x, random_y, random_node})
   end
 
-  defp random_element(list) do
-    random_element(list, length(list))
+  defp check_for_collision([]), do: :no_collision
+  defp check_for_collision([{_x, _y, _node}]), do: :collision
+
+  defp handle_collision(:collision, snake_positions, _position) do
+    find_new_position(snake_positions)
+  end
+  defp handle_collision(:no_collision, _snake_positions, position) do
+    position
   end
 
-  defp random_element(list, length) do
-    random_index = Float.floor(:random.uniform * length)
-    list |> Enum.at random_index
+  defp tile_notify_arrived(x, y) do
+    {x, y}
+    |> TileDB.get
+    |> Tile.notify_arrival(:insect, self)
   end
 
-  defp update_state(insect) do
-    :ok = insect |> GenServer.call :update_state
+  defp tile_notify_gone(x, y) do
+    {x, y} 
+    |> TileDB.get
+    |> Tile.notify_gone(self)
   end
+
+    defp update_state(insect), do: :ok = insect |> GenServer.call :update_state
 end
