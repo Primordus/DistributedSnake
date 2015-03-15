@@ -35,10 +35,10 @@ defmodule Snake.Insect do
   end
 
   @doc """
-  Gives back the location of the insect process. 
+  Gives back the position of the insect process. 
   Return value is a tuple of the following form: {x, y, node}.
   """
-  def get_location, do: @server |> GenServer.call :get_location
+  def get_position, do: @server |> GenServer.call :get_position
 
   @doc """
   Kills the current insect.
@@ -62,7 +62,7 @@ defmodule Snake.Insect do
   end
 
   @doc false
-  def handle_call(:get_location, _from, state = %State{x: x, y: y}) do
+  def handle_call(:get_position, _from, state = %State{x: x, y: y}) do
     {:reply, {x, y, node}, state}
   end
   def handle_call(:kill, _from, state = %State{led: led}) do

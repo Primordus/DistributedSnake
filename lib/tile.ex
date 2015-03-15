@@ -79,7 +79,8 @@ defmodule Snake.Tile do
     {:reply, {:occupied_with, pid}, state}
   end
   def handle_call({:notify_gone, pid}, _from, 
-                  state = %State{occupied_with: pid}) do
+                  state = %State{x: x, y: y, occupied_with: pid}) do
+    GUI.clear_tile %{x: x, y: y, node: node}
     {:reply, :ok, %State{state | occupied_with: :no_pid}}
   end
   def handle_call({:notify_gone, _pid1}, _from, 

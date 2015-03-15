@@ -8,6 +8,7 @@ defmodule Snake.Game do
       import Snake.Game
       defmacro width, do: 10
       defmacro height, do: 10
+      defmacro score, do: 100
     end
   end
 end
