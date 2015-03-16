@@ -41,14 +41,17 @@ defmodule Snake.Snake do
     def new(size) do
       Random.generate_seed
       # First x and y somewhere in the middle of the board.
-      first_x = round(Random.number(width) * 0.5 + 0.25 * width)
-      first_y = round(Random.number(height) * 0.5 + 0.25 * height)
+      first_x = round((Random.number(4) - 2) + 0.5 * width)
+      first_y = round((Random.number(4) - 2) + 0.5 * height)
       first_node = Random.element [Node.self | Node.list]
       direction = Random.element [:up, :down, :left, :right]
       color = Random.element [:orange, :green, :blue, :cyan, 
                                 :yellow, :purple, :white]
 
-      positions = List.duplicate {first_x, first_y, first_node}, size
+      tail = calc_tail_positions(first_x, first_y, first_node, 
+                                  direction, size - 1, [])
+      positions = [{first_x, first_y, first_node} | tail]
+
       %State{size: size, positions: positions, 
               direction: direction, color: color}
     end
@@ -100,7 +103,7 @@ defmodule Snake.Snake do
     def add_segment(state = %State{positions: positions}) do
       reverse_pos = Enum.reverse positions
       new_positions = Enum.reverse [hd(reverse_pos) | reverse_pos]
-      %State{state | positions: new_positions}
+      %State{state | size: state.size + 1, positions: new_positions}
     end
 
     # Helper functions
@@ -110,6 +113,26 @@ defmodule Snake.Snake do
       # adds new segment to beginning (new location for head)
       # and updates the state.
       %State{state | positions: [{new_x, new_y, new_node} | Enum.drop(pos, -1)]}
+    end
+
+    defp calc_tail_positions(_x, _y, _node, _dir, 0, acc) do
+      Enum.reverse acc
+    end
+    defp calc_tail_positions(x, y, a_node, :left, amount, acc) do
+      calc_tail_positions(x + 1, y, a_node, :left, amount - 1, 
+                          [{x + 1, y, a_node} | acc])  
+    end
+    defp calc_tail_positions(x, y, a_node, :right, amount, acc) do
+      calc_tail_positions(x - 1, y, a_node, :right, amount - 1,
+                          [{x - 1, y, a_node} | acc])
+    end
+    defp calc_tail_positions(x, y, a_node, :up, amount, acc) do
+      calc_tail_positions(x, y - 1, a_node, :up, amount - 1,
+                          [{x, y - 1, a_node}| acc])
+    end
+    defp calc_tail_positions(x, y, a_node, :down, amount, acc) do
+      calc_tail_positions(x, y + 1, a_node, :down, amount - 1,
+                          [{x, y + 1, a_node} | acc])
     end
   end
 
@@ -135,7 +158,7 @@ defmodule Snake.Snake do
     @server |> GenServer.call :get_positions
   end
 
-
+  
   # GenServer callbacks
 
   @doc false
@@ -160,7 +183,7 @@ defmodule Snake.Snake do
   def handle_call(:update_state, _from, state = %State{}) do
     new_state = 
       state
-      |> State.move(state)            # 1) Move the snake
+      |> State.move                   # 1) Move the snake
       |> check_for_snake_collisions   # 2) Check for collisions with itself
       |> check_for_insect_collisions  # 3) Check for collisions with insect
       |> draw_snake(state)            # 4) Update GUI
@@ -209,7 +232,7 @@ defmodule Snake.Snake do
     GUI.update_score %{score: score}
     state |> State.add_segment
   end
-  defp handle_insect_collision_result(_position1, _position2, _state), do: :ok
+  defp handle_insect_collision_result(_position1, _position2, state), do: state
 
   def draw_snake(new_state = %State{positions: new_positions, color: color}, 
                   state = %State{positions: old_positions}) do
@@ -220,6 +243,8 @@ defmodule Snake.Snake do
     new_positions |> Enum.map fn({x, y, a_node}) ->
       tile_notify_arrived(x, y, a_node, color)
     end
+
+    new_state
   end
 
   defp tile_notify_arrived(x, y, a_node, color) do

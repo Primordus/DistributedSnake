@@ -22,7 +22,7 @@ defmodule Snake.InsectTest do
   end
 
   test "Insect can return the current location" do
-    {x, y, a_node} = Insect.get_location
+    {x, y, a_node} = Insect.get_position
     assert x in 0..width
     assert y in 0..height
     assert a_node in [Node.self | Node.list]
@@ -41,9 +41,9 @@ defmodule Snake.InsectTest do
   end
 
   test "Insect changes location/node when countdown reaches 0" do
-    {x1, y1, node1} = Insect.get_location
+    {x1, y1, node1} = Insect.get_position
     simulate_update_state
-    {x2, y2, node2} = Insect.get_location
+    {x2, y2, node2} = Insect.get_position
     refute x1 == x2 and y1 == y2 and node1 == node2
   end
 

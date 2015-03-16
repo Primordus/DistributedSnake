@@ -11,7 +11,11 @@ defmodule Snake.SnakeSupervisor do
   @doc """
   Starts the supervisor.
   """
-  def start_link(:ok), do: Supervisor.start_link(__MODULE__, :ok, [name: @sup])
+  def start_link(:ok) do 
+    {:ok, sup} = Supervisor.start_link(__MODULE__, :ok, [name: @sup])
+    Node.self |> start_child 
+    {:ok, sup}
+  end
 
   @doc false
   def init(:ok) do
@@ -22,7 +26,7 @@ defmodule Snake.SnakeSupervisor do
   @doc """
   Starts a segment at new node in a certain state.
   """
-  def start_child(new_node, state) do
-    {@sup, new_node} |> Supervisor.start_child [state]
+  def start_child(new_node) do
+    {@sup, new_node} |> Supervisor.start_child []
   end
 end
