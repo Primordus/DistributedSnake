@@ -7,8 +7,8 @@ defmodule Snake.TickerTest do
   """
 
   setup_all do
-    Application.ensure_started :snake
-    sleep 10  # wait for supervisor tree to start completely
+    Application.ensure_all_started :snake
+    sleep 30  # wait for supervisor tree to start completely
     assert Ticker in :global.registered_names
     :global.unregister_name Ticker
     refute Ticker in :global.registered_names
@@ -31,6 +31,7 @@ defmodule Snake.TickerTest do
     # Globally registered process, does not show up in Process.registered()!
     assert Ticker in :global.registered_names
     {:error, {:already_started, ^_pid}} = Ticker.start_link
+    :global.unregister_name Ticker
   end
   
   test "Different delays of ticks" do
@@ -62,6 +63,8 @@ defmodule Snake.TickerTest do
     # Give a bit more delay just to be safe.
     assert_receive ^expected_msg2, 2 * second_delay
     assert_receive ^expected_msg2, 2 * second_delay
+    
+    :global.unregister_name(Ticker)
   end
 
   test "Subscribing and unsubscribing from/to ticker process" do
@@ -79,6 +82,8 @@ defmodule Snake.TickerTest do
 
     Ticker.unsubscribe self
     refute_receive :tick, 2 * delay
+
+    :global.unregister_name Ticker
   end
 
   defp sleep(ms), do: :timer.sleep(ms)

@@ -11,24 +11,27 @@ defmodule Snake.BoardTest do
 
   setup_all do # triggered once before all tests
     Application.ensure_all_started :snake
-    # Check if board = local registered process:
+    sleep 30
 
+    # Check if board = local registered process
     {:error, {:already_started, board_pid}} = Board.start_link
     assert Process.alive?(board_pid)
     refute Process.whereis(Board) == nil
     assert :ok == Board.stop
+    sleep 10
     assert Process.whereis(Board) == nil
     refute Process.alive?(board_pid)
     
-    # Give supervisor time to restart board,
-    # otherwise Process.unregister crashes.
-    sleep 30  # TODO refactor later!
+    # Give time to restart everything in supervision tree,
+    # otherwise weird crashes happen
+    sleep 20
 
     # Check if board manager = global registered process:
     assert BoardManager in :global.registered_names
 
     # Initialize 2 boards (1 registered, 1 unregistered)
     Process.unregister Board # Supervisor has restarted board by now.
+    sleep 10
     board1 = new_board
     {:ok, board2} = Board.start_link
 
