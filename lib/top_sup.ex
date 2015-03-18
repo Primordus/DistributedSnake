@@ -2,7 +2,6 @@ defmodule Snake.TopSupervisor do
   use Supervisor
   alias Snake.Gossip
   alias Snake.GameSupervisor
-  alias Snake.IO_Supervisor
 
   @moduledoc """
   Top supervisor for the snake application.
@@ -16,8 +15,7 @@ defmodule Snake.TopSupervisor do
   @doc false
   def init(:ok) do
     tree = [worker(Gossip, []),
-            supervisor(GameSupervisor, [:ok]),
-            supervisor(IO_Supervisor, [:ok])]
+            supervisor(GameSupervisor, [:ok])]
     supervise(tree, strategy: :one_for_one)
   end
 end

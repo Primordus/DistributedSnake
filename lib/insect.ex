@@ -86,7 +86,7 @@ defmodule Snake.Insect do
 
   # Helper functions
 
-  defp spawn_new_insect(state = %State{x: x, y: y}) do
+  defp spawn_new_insect(%State{x: x, y: y}) do
     snake_positions = Snake.get_positions
     {new_x, new_y, new_node} = find_new_position(snake_positions)
    

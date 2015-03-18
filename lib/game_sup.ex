@@ -18,12 +18,12 @@ defmodule Snake.GameSupervisor do
 
   @doc false
   def init(:ok) do
-    tree = [supervisor(TileSupervisor, [:ok]),
-            supervisor(SnakeSupervisor, [:ok]),
-            supervisor(InsectSupervisor, [:ok]),
+    tree = [worker(Ticker, []),
             worker(BoardManager, []),
             worker(Board, []),
-            worker(Ticker, [])]
+            supervisor(TileSupervisor, [:ok]),
+            supervisor(SnakeSupervisor, [:ok]),
+            supervisor(InsectSupervisor, [:ok])]
     supervise(tree, strategy: :one_for_all)
   end
 end

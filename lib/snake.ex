@@ -1,7 +1,6 @@
 defmodule Snake.Snake do
   use GenServer
   use Snake.Game
-  alias Snake.SnakeSupervisor, as: SnakeSup
   alias Snake.Ticker
   alias Snake.Insect
   alias Snake.Board
@@ -14,10 +13,8 @@ defmodule Snake.Snake do
 
   TODO:
   =====
-  - subscribe to input
   - gameover => simply crash
   - (re)start game + reacting to player input
-  - unit tests + docs
   """
 
   @server {:global, __MODULE__} # TODO or local registered process?
@@ -59,38 +56,38 @@ defmodule Snake.Snake do
     @doc """
     Moves the snake.
     """
-    def move(state = %State{positions: pos = [{x, y, a_node} | _tail], 
+    def move(state = %State{positions: [{x, y, a_node} | _tail], 
                             direction: :left}) when x > 0 do
       state |> do_move(x - 1, y, a_node)
     end
-    def move(state = %State{positions: pos = [{_x, y, _node} | _tail], 
+    def move(state = %State{positions: [{_x, y, _node} | _tail], 
                             direction: :left}) do
       {Board, new_node} = Board.get(:left)
       state |> do_move(width, y, new_node)
     end
-    def move(state = %State{positions: pos = [{x, y, a_node} | _tail], 
+    def move(state = %State{positions: [{x, y, a_node} | _tail], 
                             direction: :right}) when x < width do
       state |> do_move(x + 1, y, a_node)
     end
-    def move(state = %State{positions: pos = [{_x, y, _node} | _tail], 
+    def move(state = %State{positions: [{_x, y, _node} | _tail], 
                             direction: :right}) do
       {Board, new_node} = Board.get(:right)
       state |> do_move(0, y, new_node)
     end
-    def move(state = %State{positions: pos = [{x, y, a_node} | _tail], 
+    def move(state = %State{positions: [{x, y, a_node} | _tail], 
                             direction: :up}) when y < height do
       state |> do_move(x, y + 1, a_node)
     end
-    def move(state = %State{positions: pos = [{x, _y, _node} | _tail], 
+    def move(state = %State{positions: [{x, _y, _node} | _tail], 
                             direction: :up}) do
       {Board, new_node} = Board.get(:up)
       state |> do_move(x, 0, new_node)
     end
-    def move(state = %State{positions: pos = [{x, y, a_node} | _tail], 
+    def move(state = %State{positions: [{x, y, a_node} | _tail], 
                             direction: :down}) when y > 0 do
       state |> do_move(x, y - 1, a_node)
     end
-    def move(state = %State{positions: pos = [{x, _y, _node} | _tail], 
+    def move(state = %State{positions: [{x, _y, _node} | _tail], 
                             direction: :down}) do
       {Board, new_node} = Board.get(:down)
       state |> do_move(x, height, new_node)
@@ -158,6 +155,13 @@ defmodule Snake.Snake do
     @server |> GenServer.call :get_positions
   end
 
+  @doc """
+  Updates the direction the snake will move to next.
+  """
+  def set_direction("up"),    do: update_direction(:up)
+  def set_direction("down"),  do: update_direction(:down)
+  def set_direction("left"),  do: update_direction(:left)
+  def set_direction("right"), do: update_direction(:right)
   
   # GenServer callbacks
 
@@ -173,7 +177,7 @@ defmodule Snake.Snake do
     end
 
     # TODO also subscribe to insect for events!
-    {:ok, state}
+  {:ok, state}
   end
 
   @doc false
@@ -199,7 +203,7 @@ defmodule Snake.Snake do
   end
 
   @doc false
-  def terminate(_reason, state = %State{positions: positions}) do
+  def terminate(_reason, %State{positions: positions}) do
     Ticker.unsubscribe self
     
     positions |> Enum.map fn({x, y, a_node}) ->
@@ -235,7 +239,7 @@ defmodule Snake.Snake do
   defp handle_insect_collision_result(_position1, _position2, state), do: state
 
   def draw_snake(new_state = %State{positions: new_positions, color: color}, 
-                  state = %State{positions: old_positions}) do
+                 _old_state = %State{positions: old_positions}) do
     old_positions |> Enum.map fn({x, y, a_node}) ->
       tile_notify_gone(x, y, a_node)
     end
@@ -267,6 +271,6 @@ defmodule Snake.Snake do
 
   defp update_state(snake), do: :ok = snake |> GenServer.call :update_state
   defp update_direction(direction) do
-    :ok = @server |> GenServer.call :update_direction, direction
+    :ok = @server |> GenServer.call {:update_direction, direction}
   end
 end

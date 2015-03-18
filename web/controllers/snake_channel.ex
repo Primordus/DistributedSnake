@@ -1,5 +1,6 @@
 defmodule Snake.SnakeChannel do
   use Phoenix.Channel
+  alias Snake.Snake
 
   @moduledoc """
   Websockets logic!
@@ -11,8 +12,14 @@ defmodule Snake.SnakeChannel do
     {:ok, socket} # Simply allow all users to connect and view the game.
   end
 
-  # Catch all clause to handle all msges without processing
-  def handle_in(_topic, _msg, socket), do: {:ok, socket}
+  def handle_in("new_input", %{"direction" => dir}, socket) do
+    dir |> Snake.set_direction
+    {:ok, socket}
+  end
+  def handle_in(_topic, _msg, socket) do
+    # Catch all remaining clauses to handle all msges without processing
+    {:ok, socket}
+  end
 
   def handle_out(topic = "draw_snake", draw_snake_msg, socket) do
     handle_draw_snake(socket, topic, draw_snake_msg, Node.self)
@@ -33,13 +40,14 @@ defmodule Snake.SnakeChannel do
   end
 
   # Catch all clause to forward all other msges without processing
-  def handle_out(topic, msg, socket), do: reply(socket, topic, msg)
-
+  def handle_out(topic, msg, socket) do
+    reply(socket, topic, msg)
+  end
 
   # Helper functions
 
   defp handle_draw_snake(socket, topic,
-                        msg = [x: _x, y: _y, node: this_node, color: _color], 
+                        msg = %{x: _x, y: _y, node: this_node, color: _color}, 
                         this_node) do
     reply socket, topic, msg
   end
@@ -49,7 +57,7 @@ defmodule Snake.SnakeChannel do
   end
 
   defp handle_draw_insect(socket, topic,
-                          msg = [x: _x, y: _y, node: this_node, color: _color], 
+                          msg = %{x: _x, y: _y, node: this_node}, 
                           this_node) do
     reply socket, topic, msg
   end
@@ -58,7 +66,7 @@ defmodule Snake.SnakeChannel do
   end
 
   defp handle_clear_tile(socket, topic, 
-                          msg = [x: _x, y: _y, node: this_node], 
+                          msg = %{x: _x, y: _y, node: this_node}, 
                           this_node) do
     reply socket, topic, msg
   end
