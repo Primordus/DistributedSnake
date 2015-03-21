@@ -5,7 +5,8 @@ $(function() {
     canvas.fillRect(0, 0, c.width, c.height);
 
     // Code to handle keyboard input
-    var KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39;
+    var KEY_UP = 40, KEY_DOWN = 38, 
+        KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32;
     
     var send_input = function(channel, key_code) {
         switch(key_code) {
@@ -21,13 +22,15 @@ $(function() {
             case KEY_LEFT:
                 notify_input(channel, "left");
                 break;
+            case KEY_SPACE:
+                notify_input(channel, "space");
             default:
                 break;
         }
     }
     
-    var notify_input = function(channel, dir) {
-        channel.send("new_input", {direction: dir});
+    var notify_input = function(channel, key_input) {
+        channel.send("new_input", {input: key_input});
     }
 
     // Websocket logic
@@ -50,6 +53,13 @@ $(function() {
             update_score(msg);
         });
 
+        channel.on("reset_score", function(msg) {
+            reset_score();
+        });
+        
+        clear_screen(canvas);
+        channel.send("draw_all", {});
+
         // Register player input
         $(window).keydown(function(key_event) {
             send_input(channel, key_event.keyCode);
@@ -67,25 +77,38 @@ function clear_screen(canvas) {
 }
 
 function clear_tile(canvas, position) {
-    canvas.fillStyle = "black";
-    canvas.fillRect(position.x * size, position.y * size, size, size);
+    draw_rect(canvas, position.x, position.y, "black");
 }
 
 function draw_snake(canvas, snake) {
-    canvas.fillStyle = snake.color;
-    canvas.fillRect(snake.x * size, snake.y * size, size, size);
+    draw_rect(canvas, snake.x, snake.y, snake.color);
 }
 
 function draw_insect(canvas, insect) {
-    console.log(insect)
-    console.log("x =" + insect.x);
-    console.log("y =" + insect.y);
-    canvas.fillStyle = "red";
-    canvas.fillRect(insect.x * size, insect.y * size, size, size);
+    draw_rect(canvas, insect.x, insect.y, "red");
 }
 
 function update_score(score) { 
-    var currentScore = $("#score");
-    var newScore = parseInt(currentScore.html()) + parseInt(score.score);
-    currentScore.html(newScore);
+    var current_score = $("#score");
+    var high_score = $("#highscore");
+    var highest_score = parseInt(high_score.html());
+    var new_score = parseInt(current_score.html()) + parseInt(score.score);
+    
+    current_score.html(new_score);
+    if (new_score > highest_score) {
+        high_score.html(new_score);
+    }
+}
+
+function reset_score() {
+    var score = $("#score");
+    score.html(0);
+}
+
+function draw_rect(canvas, x, y, color) {
+    canvas.fillStyle = color;
+    canvas.strokeStyle = "black";
+    canvas.lineWidth = "1";
+    canvas.fillRect(x * size, y * size, size, size);
+    canvas.strokeRect(x * size, y * size, size, size);
 }

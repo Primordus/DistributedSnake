@@ -2,9 +2,13 @@
     <div class='col-md-10 col-md-offset-1'>
         <h3>Snake</h3>
         <canvas id='canvas' height='400' width='400'>
-            <!-- Height and width are set in CSS. -->
         </canvas>
 
-        <p class='lead'>Testing... <span id='score'>0</span></p>
+        <p class='lead'>
+            <strong>Score: </strong><span id='score'>0</span>
+        </p>
+        <p class='lead'>
+            <strong>Highscore: </strong><span id='highscore'>0</span>
+        </p>
     </div>
 </div>

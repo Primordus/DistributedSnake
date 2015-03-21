@@ -50,5 +50,6 @@ defmodule Snake.InsectSupervisor do
 
     {:ok, pid}
   end
-  defp do_spawn(_env, pin), do: LED_Sup.start_child(pin)
+  defp do_spawn(_env, pin), do: do_spawn(:test, pin)
+  #defp do_spawn(_env, pin), do: LED_Sup.start_child(pin)
 end

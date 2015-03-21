@@ -33,7 +33,7 @@ defmodule Snake.Tile do
   def notify_arrival(tile, :snake, pid, color) when is_pid(tile) 
                                                 and is_pid(pid)
                                                 and is_atom(color) do
-    :ok = tile |> GenServer.call {:notify_arrival, :snake, pid, color}
+    tile |> GenServer.call {:notify_arrival, :snake, pid, color}
   end
 
   @doc """
@@ -41,14 +41,14 @@ defmodule Snake.Tile do
   """
   def notify_arrival(tile, :insect, pid) when is_pid(tile) 
                                         and is_pid(pid) do
-    :ok = tile |> GenServer.call {:notify_arrival, :insect, pid}
+    tile |> GenServer.call {:notify_arrival, :insect, pid}
   end
 
   @doc """
   Notifies the tile process that the snake or insect has left this coordinate.
   """
   def notify_gone(tile, pid) when is_pid(tile) and is_pid(pid) do
-    :ok = tile |> GenServer.call {:notify_gone, pid}
+    tile |> GenServer.call {:notify_gone, pid}
   end
 
   # GenServer callbacks

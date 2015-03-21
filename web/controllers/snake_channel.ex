@@ -1,5 +1,6 @@
 defmodule Snake.SnakeChannel do
   use Phoenix.Channel
+  alias Snake.Insect
   alias Snake.Snake
 
   @moduledoc """
@@ -12,8 +13,18 @@ defmodule Snake.SnakeChannel do
     {:ok, socket} # Simply allow all users to connect and view the game.
   end
 
-  def handle_in("new_input", %{"direction" => dir}, socket) do
-    dir |> Snake.set_direction
+  def handle_in("draw_all", _msg, socket) do
+    Snake.draw
+    Insect.draw
+    {:ok, socket}
+  end
+  def handle_in("new_input", %{"input" => "space"}, socket) do
+    Snake.subscribe_to_ticker
+    Insect.subscribe_to_ticker
+    {:ok, socket}
+  end
+  def handle_in("new_input", %{"input" => direction}, socket) do
+    direction |> Snake.set_direction
     {:ok, socket}
   end
   def handle_in(_topic, _msg, socket) do
@@ -33,10 +44,12 @@ defmodule Snake.SnakeChannel do
     handle_clear_tile(socket, topic, clear_tile_msg, Node.self)
   end
 
-  # handle_in and handle_out not needed in this case,
   def handle_out(topic = "score", score, socket) do 
     # Forward score to all GUIs!
     reply socket, topic, score
+  end
+  def handle_out(topic = "reset_score", msg, socket) do
+    reply socket, topic, msg
   end
 
   # Catch all clause to forward all other msges without processing

@@ -5,7 +5,7 @@ defmodule Snake.Gossip do
   # TODO improve mechanism for detecting node removal (maybe monitors/links?)
 
   @server __MODULE__
-  @first_node :"pi1@tielen.local"
+  @first_node :"pi1@raspberrypi"
 
   defmodule State, do: defstruct pubsub: :no_pid
 

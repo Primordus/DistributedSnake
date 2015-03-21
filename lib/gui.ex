@@ -5,8 +5,6 @@ defmodule Snake.GUI do
   in the GUI.
   """
 
-  # TODO unit test the broadcast system (if properly connected)?
-
   @insect_color :red
   
   # API
@@ -43,6 +41,15 @@ defmodule Snake.GUI do
       and is_integer(y) and y > -1 do
     notify_gui "clear_tile", msg
   end
+
+  @doc """
+  Resets the score on the GUI back to 0.
+  """
+  def reset_score do
+    notify_gui "reset_score", %{}
+  end
+
+  # Helper functions
 
   defp notify_gui(topic, msg) do
     Phoenix.Channel.broadcast("snake", topic, msg)
