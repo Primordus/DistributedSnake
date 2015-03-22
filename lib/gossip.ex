@@ -5,7 +5,7 @@ defmodule Snake.Gossip do
   # TODO improve mechanism for detecting node removal (maybe monitors/links?)
 
   @server __MODULE__
-  @first_node :"pi1@raspberrypi"
+  @first_node :"node1@192.168.0.156"
 
   defmodule State, do: defstruct pubsub: :no_pid
 
@@ -39,12 +39,12 @@ defmodule Snake.Gossip do
   @doc false
   def init(:ok) do
     Process.flag(:trap_exit, true)
-
+    {:ok, pubsub} = PubSub.start_link
+    
     @first_node 
     |> Node.ping
-    |> process_ping # Crashes if ping fails.
-
-    {:ok, pubsub} = PubSub.start_link
+    |> process_ping
+    
     {:ok, %State{pubsub: pubsub}}
   end
 
@@ -71,7 +71,6 @@ defmodule Snake.Gossip do
   end
   def handle_cast(event = {:removed_node, _node}, 
                   state = %State{pubsub: pubsub}) do
-    pubsub |> PubSub.publish event
     {:noreply, state}
   end
   
@@ -82,29 +81,26 @@ defmodule Snake.Gossip do
   end
 
   # Helper functions
+
   defp process_ping(:pong) do
-    this_node = Node.self
     # Spawns process on the first node (knows all other nodes already),
     # notifies everybody except this node of the change in the cluster.
     # TODO improve this code later..
-    Node.spawn @first_node, fn ->
-      notify_node_added(this_node)
-    end
+
+    Node.spawn @first_node, __MODULE__, :notify_node_added, [Node.self]
 
     :ok
   end
   defp process_ping(:pang), do: :not_ok
 
-  defp notify_node_added(new_node) do
-    # Sends an async message to all nodes (except new_node) that a new node
-    # is added
-    [Node.self | Node.list] 
-      |> List.delete(new_node)
-      |> GenServer.abcast @server, {:added_node, new_node}
+  @doc false
+  def notify_node_added(new_node) do
+    # Sends an async message to all nodes that a new node is added
+    GenServer.abcast @server, {:added_node, new_node}
   end
 
   # TODO improve this function
-  defp notify_node_removed() do
-    Node.list |> GenServer.abcast @server, {:removed_node, node()}
+  defp notify_node_removed do
+    Node.list |> GenServer.abcast @server, {:removed_node, node}
   end
 end

@@ -67,7 +67,7 @@ $(function() {
     });
 });
 
-var size = 40; // size of each coordinate.
+var size = 80; // size of each coordinate.
 
 // TODO maybe remove function and work with diffs to clear screen.
 function clear_screen(canvas) {

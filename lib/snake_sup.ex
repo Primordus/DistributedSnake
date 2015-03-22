@@ -13,7 +13,10 @@ defmodule Snake.SnakeSupervisor do
   """
   def start_link(:ok) do 
     {:ok, sup} = Supervisor.start_link(__MODULE__, :ok, [name: @sup])
-    Node.self |> start_child 
+    {:ok, _snake} =
+      Snake
+      |> :global.whereis_name
+      |> handle_snake_alive
     {:ok, sup}
   end
 
@@ -29,4 +32,10 @@ defmodule Snake.SnakeSupervisor do
   def start_child(new_node) do
     {@sup, new_node} |> Supervisor.start_child []
   end
+
+  # Helper functions
+  defp handle_snake_alive(:undefined), do: spawn_snake
+  defp handle_snake_alive(snake_pid),  do: {:ok, snake_pid}
+
+  defp spawn_snake, do: Node.self |> start_child 
 end

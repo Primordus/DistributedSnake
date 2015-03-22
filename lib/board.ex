@@ -92,6 +92,7 @@ defmodule Snake.Board do
   @doc false
   def init(:ok) do
     Process.flag(:trap_exit, true)
+    local_board |> BoardManager.notify_board_added
     {:ok, %State{}}
   end
 
@@ -150,6 +151,7 @@ defmodule Snake.Board do
   @doc false
   def terminate(_reason, %State{}) do
     # Notify manager it has to remove this board from all the adjacent boards
-    :ok = BoardManager.notify_board_gone(Node.self)
+    local_board |> BoardManager.notify_board_gone
+    :ok
   end
 end

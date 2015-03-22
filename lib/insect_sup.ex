@@ -16,11 +16,10 @@ defmodule Snake.InsectSupervisor do
   """
   def start_link(:ok) do
     {:ok, sup} = Supervisor.start_link(__MODULE__, :ok, [name: @sup])
-    Random.generate_seed
-    random_x = Random.number(width)
-    random_y = Random.number(height)
-    random_node = [Node.self | Node.list] |> Random.element
-    {:ok, _} = start_child %{x: random_x, y: random_y, node: random_node}
+    {:ok, _insect} = 
+      Insect
+      |> :global.whereis_name
+      |> handle_insect_alive
     {:ok, sup}
   end
 
@@ -38,6 +37,22 @@ defmodule Snake.InsectSupervisor do
   def start_child(%{x: x, y: y, node: a_node}) do
     {@sup, a_node} |> Supervisor.start_child [%{x: x, y: y}]
   end
+
+  defp handle_insect_alive(:undefined), do: spawn_insect
+  defp handle_insect_alive(insect_pid), do: {:ok, insect_pid}
+
+  defp spawn_insect do
+    Random.generate_seed
+    random_x = Random.number(width - 1)
+    random_y = Random.number(height - 1)
+    random_node = [Node.self | Node.list] |> Random.element
+    {:ok, _} = start_child %{x: random_x, y: random_y, node: random_node}
+  end
+
+  
+
+
+  # TODO remove following code later..
 
   defp spawn_led(pin), do: do_spawn(Mix.env, pin) # TODO remove GPIO code later
 

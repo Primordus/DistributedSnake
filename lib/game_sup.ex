@@ -18,12 +18,42 @@ defmodule Snake.GameSupervisor do
 
   @doc false
   def init(:ok) do
-    tree = [worker(Ticker, []),
-            worker(BoardManager, []),
-            worker(Board, []),
-            supervisor(TileSupervisor, [:ok]),
-            supervisor(SnakeSupervisor, [:ok]),
-            supervisor(InsectSupervisor, [:ok])]
-    supervise(tree, strategy: :one_for_all)
+    supervise(supervision_tree, strategy: :one_for_all)
   end
+
+  # Helper functions
+
+  defp supervision_tree do
+    basic_tree = [worker(Board, []),
+                  supervisor(TileSupervisor, [:ok]),
+                  supervisor(SnakeSupervisor, [:ok]),
+                  supervisor(InsectSupervisor, [:ok])] 
+    # Wait a bit so global names get time to spread across cluster:
+    :timer.sleep 300
+    basic_tree
+    |> check_board_mgr_alive
+    |> check_ticker_alive
+  end
+
+  defp check_board_mgr_alive(tree) do
+    BoardManager
+    |> :global.whereis_name
+    |> handle_board_mgr_alive(tree)
+  end
+  
+  defp handle_board_mgr_alive(:undefined, tree) do
+    [worker(BoardManager, []) | tree]
+  end
+  defp handle_board_mgr_alive(_, tree), do: tree
+
+  defp check_ticker_alive(tree) do
+    Ticker
+    |> :global.whereis_name
+    |> handle_ticker_alive(tree)
+  end
+
+  defp handle_ticker_alive(:undefined, tree) do
+     [worker(Ticker, []) | tree]
+  end
+  defp handle_ticker_alive(_, tree), do: tree
 end

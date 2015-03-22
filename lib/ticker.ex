@@ -7,7 +7,7 @@ defmodule Snake.Ticker do
   """
 
   @server {:global, __MODULE__}
-  @default_delay 1000 # 1 second.
+  @default_delay 200     #1000 # 1 second.
 
   defmodule State, do: defstruct delay: 0, pubsub: :no_pid
 

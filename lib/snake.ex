@@ -53,12 +53,12 @@ defmodule Snake.Snake do
                                   direction, size - 1, [])
       positions = [{first_x, first_y, first_node} | tail]
 
-     state = %State{size: size, 
-                    positions: positions, previous_positions: positions,
-                    direction: direction, current_direction: direction,
-                    color: color}
+      state = %State{size: size, 
+                     positions: positions, previous_positions: positions,
+                     direction: direction, current_direction: direction,
+                     color: color}
       
-                  # Check if insect exists, prevent collisions
+      # Check if insect exists, prevent collisions
       Insect 
       |> :global.whereis_name 
       |> check_for_insect_collisions(state)
@@ -85,12 +85,12 @@ defmodule Snake.Snake do
       |> update_current_direction
       |> do_move(x - 1, y, {Board, a_node})
     end
-    def move(state = %State{positions: [{_x, y, _node} | _tail], 
+    def move(state = %State{positions: [{_x, y, a_node} | _tail], 
                             direction: :left}) do
-      board = Board.get(:left)
+      board = Board.get(:left_of, {Board, a_node})
       state
       |> update_current_direction
-      |> do_move(width, y, board)
+      |> do_move(width - 1, y, board)
     end
     def move(state = %State{positions: [{x, y, a_node} | _tail], 
                             direction: :right}) when x < width - 1 do
@@ -98,9 +98,9 @@ defmodule Snake.Snake do
       |> update_current_direction
       |> do_move(x + 1, y, {Board, a_node})
     end
-    def move(state = %State{positions: [{_x, y, _node} | _tail], 
+    def move(state = %State{positions: [{_x, y, a_node} | _tail], 
                             direction: :right}) do
-      board = Board.get(:right)
+      board = Board.get(:right_of, {Board, a_node})
       state
       |> update_current_direction
       |> do_move(0, y, board)
@@ -111,9 +111,9 @@ defmodule Snake.Snake do
       |> update_current_direction
       |> do_move(x, y + 1, {Board, a_node})
     end
-    def move(state = %State{positions: [{x, _y, _node} | _tail], 
+    def move(state = %State{positions: [{x, _y, a_node} | _tail], 
                             direction: :up}) do
-      board = Board.get(:up)
+      board = Board.get(:up_of, {Board, a_node})
       state 
       |> update_current_direction
       |> do_move(x, 0, board)
@@ -124,12 +124,12 @@ defmodule Snake.Snake do
       |> update_current_direction
       |> do_move(x, y - 1, {Board,a_node})
     end
-    def move(state = %State{positions: [{x, _y, _node} | _tail], 
+    def move(state = %State{positions: [{x, _y, a_node} | _tail], 
                             direction: :down}) do
-      board = Board.get(:down)
+      board = Board.get(:down_of, {Board, a_node}) 
       state 
       |> update_current_direction
-      |> do_move(x, height, board)
+      |> do_move(x, height - 1, board)
     end
 
     @doc """
@@ -254,27 +254,6 @@ defmodule Snake.Snake do
     {status, new_state} |> handle_status
     # TODO handle gameover better? TODO make supervisors permanent for board, game and tile!
   end
-  def handle_call({:update_direction, :left}, _from, 
-                  state = %State{current_direction: :right}) do
-                    # Do not allow this (would instantly cause gameover),
-                    # same for other clauses..
-    {:reply, :ok, state}
-  end
-  def handle_call({:update_direction, :right}, _from, 
-                  state = %State{current_direction: :left}) do
-    {:reply, :ok, state}
-  end
-  def handle_call({:update_direction, :up}, _from, 
-                    state = %State{current_direction: :down}) do
-    {:reply, :ok, state}
-  end
-  def handle_call({:update_direction, :down}, _from, 
-                  state = %State{current_direction: :up}) do
-    {:reply, :ok, state}
-  end
-  def handle_call({:update_direction, new_dir}, _from, state = %State{}) do
-    {:reply, :ok, %State{state | direction: new_dir}}
-  end
   def handle_call(:draw, _from, state = %State{positions: pos, color: c}) do
     pos |> Enum.map fn({x, y, n}) ->
       GUI.draw_snake %{x: x, y: y, node: n, color: c}
@@ -283,6 +262,32 @@ defmodule Snake.Snake do
   end
   def handle_call(_request, _from, state = %State{}) do
     {:reply, {:error, :not_supported}, state}
+  end
+
+  @doc false
+  def handle_cast({:update_direction, :left}, 
+                  state = %State{current_direction: :right}) do
+    # Do not allow this (would instantly cause gameover),
+    # same for other directions..
+    {:noreply, state}
+  end
+  def handle_cast({:update_direction, :right}, 
+                  state = %State{current_direction: :left}) do
+    {:noreply, state}
+  end
+  def handle_cast({:update_direction, :up}, 
+                    state = %State{current_direction: :down}) do
+    {:noreply, state}
+  end
+  def handle_cast({:update_direction, :down}, 
+                  state = %State{current_direction: :up}) do
+    {:noreply, state}
+  end
+  def handle_cast({:update_direction, new_dir}, state = %State{}) do
+    {:noreply, %State{state | direction: new_dir}}
+  end
+  def handle_cast(_request, state) do
+    {:noreply, state}
   end
 
   @doc false
@@ -378,6 +383,6 @@ defmodule Snake.Snake do
 
   defp update_state(snake), do: :ok = snake |> GenServer.call :update_state
   defp update_direction(direction) do
-    @server |> GenServer.call {:update_direction, direction}
+    @server |> GenServer.cast {:update_direction, direction}
   end
 end

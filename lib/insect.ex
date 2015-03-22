@@ -15,7 +15,7 @@ defmodule Snake.Insect do
   """
 
   @server {:global, __MODULE__}
-  @default_counter 10
+  @default_counter 30
 
   defmodule State do
     @default_value quote do: throw "Invalid value for state!"
